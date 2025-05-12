@@ -21,6 +21,7 @@ struct s_args{
     int list;
     int mon;
     int ind;
+    int help;
     int targ_present;
     int ifc_present;
     char targ[17];
@@ -127,6 +128,7 @@ int main(int argc, char *argv[]){
     memset(&args, 0, sizeof(args));
     args.list = 1;
     args.mon = 1;
+    args.help = 1;
     args.ifc_present = 1;
     args.targ_present = 1;
     int option;
@@ -147,6 +149,7 @@ int main(int argc, char *argv[]){
                 args.targ_present = 0;
                 break;
             case 'h':
+                args.help = 0;
                 usage();
                 break;
             default:
@@ -155,8 +158,13 @@ int main(int argc, char *argv[]){
     }
 
     if(args.ifc_present == 1){
-        printf("Error: -i, --interface argument required\n");
-        return 1;
+        if(args.targ_present == 0 || args.list == 0){
+            printf("Error: -i, --interface argument required\n");
+            return 1;
+        }
+        else{
+            return 0;
+        }
     }
 
     struct iwreq iwr;
