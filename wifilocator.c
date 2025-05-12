@@ -49,9 +49,9 @@ int monitor(int fd, struct iwreq *iwr){
     return 0;
 }
 
-int parseaddr(uint8_t *buffer){
+int parseaddr(uint8_t *buffer[4096]){
     uint16_t headlen;
-    memcpy(headlen, *buffer[2], 2);
+    memcpy(&headlen, buffer[2], 2);
     int ind = buffer[headlen + 10];
     return ind;
 }
@@ -165,7 +165,7 @@ int main(int argc, char *argv[]){
 
     struct iwreq iwr;
     memset(&iwr, 0, sizeof(iwr));
-    strncpy(iwr.ifrn_name, args.ifc, IFNAMSIZ);
+    strncpy(iwr.ifr_ifrn.ifrn_name, args.ifc, IFNAMSIZ);
 
     struct ifreq ifr;
     memset(&ifr, 0, sizeof(ifr));
@@ -206,7 +206,7 @@ int main(int argc, char *argv[]){
     }
     if(iwr.u.mode != 6){
         printf("Error: Interface must be in monitor mode\n");
-        printf("Use -m option to put the interface into monitor mode\n")
+        printf("Use -m option to put the interface into monitor mode\n");
         close(sockfd);
         return 1;
     }
