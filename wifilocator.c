@@ -135,6 +135,10 @@ int main(int argc, char *argv[]){
         }
     }
 
+    if(args.list == 1 && args.targ_present == 1){
+        return 0;
+    }
+
     if(ioctl(sockfd, SIOCGIFINDEX, &ifr) == -1){
         printf("Error: %s\n", strerror(errno));
         return 1;
@@ -149,6 +153,15 @@ int main(int argc, char *argv[]){
     if(iwr.u.mode != 6){
         printf("Error: Interface must be in monitor mode\n");
         printf("Use -m option to put the interface into monitor mode\n")
+        return 1;
+    }
+
+    sock.sll_family = AF_PACKET;
+    sock.sll_protocol = htons(ETH_P_ALL);
+    sock.sll_ifindex = args.ind;
+
+    if(bind(sockfd, (struct sockaddr *)&sockfd, sizeof(sockfd)) == -1){
+        printf("Error: %s\n", strerror(errno));
         return 1;
     }
 
