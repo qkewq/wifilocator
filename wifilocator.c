@@ -52,7 +52,7 @@ int monitor(int fd, struct iwreq *iwr){
 int parseaddr(uint8_t *buffer[4096]){
     uint16_t headlen;
     memcpy(&headlen, buffer[2], 2);
-    int ind = buffer[headlen + 10];
+    int ind = headlen + 10;
     return ind;
 }
 
@@ -71,7 +71,7 @@ int list(int fd, struct sockaddr_ll *sock){
             printf("Error: %s\n", strerror(errno));
             return -1;
         }
-        ind = parseaddr(&buffer);
+        ind = parseaddr(buffer);
         for(int i = 0; i < 6; i++){
             addr[i] = buffer[ind + i];
         }
