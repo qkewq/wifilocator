@@ -50,7 +50,10 @@ int monitor(int fd, struct *iwr){
 }
 
 int parseaddr(uint8_t *buffer){
-
+    uint16_t headlen;
+    memcpy(headlen, buffer[2], 2);
+    int ind = buffer[headlen + 10];
+    return ind;
 }
 
 int parsedbm(){
