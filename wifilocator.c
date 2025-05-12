@@ -48,12 +48,32 @@ int monitor(int fd, struct *iwr){
     return 0;
 }
 
-int list(int fd, struct *sock, ){
+int parseaddr(){
+
+}
+
+int parsedbm(){
+
+}
+
+int list(int fd, struct *sock){
+    int x = 0;
+    uint8_t addrs[255][6] = {0};
+    while(1 == 1){
+        uint8_t buffer[4096];
+        if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
+            printf("Error: %s\n", strerror(errno));
+            return -1;
+        }
+    }
 
     return 0;
 }
 
-int locate(int fd, struct *sock){
+int locate(int fd, struct *sock, struct *args){
+    while(1 == 1){
+        uint8_t buffer[4096];
+    }
 
     return 0;
 }
@@ -131,16 +151,19 @@ int main(int argc, char *argv[]){
 
     if(args.mon == 0){
         if(monitor(sockfd, &iwr) == -1){
+            close(sockfd);
             return 1;
         }
     }
 
     if(args.list == 1 && args.targ_present == 1){
+        close(sockfd);
         return 0;
     }
 
     if(ioctl(sockfd, SIOCGIFINDEX, &ifr) == -1){
         printf("Error: %s\n", strerror(errno));
+        close(sockfd);
         return 1;
     }
     args.ind = ifr.ifr_ifindex;
@@ -148,11 +171,13 @@ int main(int argc, char *argv[]){
     iwr.u.mode = 0;
     if(ioctl(sockfd, SIOCGIWMODE, &iwr) == -1){
         printf("Error: %s\n", strerror(errno));
+        close(sockfd);
         return 1;
     }
     if(iwr.u.mode != 6){
         printf("Error: Interface must be in monitor mode\n");
         printf("Use -m option to put the interface into monitor mode\n")
+        close(sockfd);
         return 1;
     }
 
@@ -162,16 +187,23 @@ int main(int argc, char *argv[]){
 
     if(bind(sockfd, (struct sockaddr *)&sockfd, sizeof(sockfd)) == -1){
         printf("Error: %s\n", strerror(errno));
+        close(sockfd);
         return 1;
     }
 
     if(args.list == 0){
-        list(sockfd, &sock);
+        if(list(sockfd, &sock) == -1){
+            close(sockfd);
+            return 1;
+        }
     }
 
     if(args.targ_present == 0){
-        locate(sockfd, &sock);
+        if(locate(sockfd, &sock, &args) == -1){
+            close(sockfd);
+            return 1;
+        }
     }
-
+    close(sockfd);
     return 0;
 }
