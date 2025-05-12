@@ -51,7 +51,7 @@ int monitor(int fd, struct iwreq *iwr){
 
 int parseaddr(uint8_t buffer[4096]){
     uint16_t headlen;
-    memcpy(&headlen, buffer[2], 2);
+    memcpy(&headlen, &buffer[2], 2);
     int ind = headlen + 10;
     return ind;
 }
