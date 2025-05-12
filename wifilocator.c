@@ -40,7 +40,7 @@ int usage(){
     return 0;
 }
 
-int monitor(int fd, struct *iwr){
+int monitor(int fd, struct iwreq *iwr){
     iwr->u.mode = IW_MODE_MONITOR;
     if(ioctl(fd, SIOCSIWMODE, iwr) == -1){
         printf("Error: %s\n", strerror(errno));
@@ -51,7 +51,7 @@ int monitor(int fd, struct *iwr){
 
 int parseaddr(uint8_t *buffer){
     uint16_t headlen;
-    memcpy(headlen, buffer[2], 2);
+    memcpy(headlen, *buffer[2], 2);
     int ind = buffer[headlen + 10];
     return ind;
 }
@@ -60,7 +60,7 @@ int parsedbm(){
 
 }
 
-int list(int fd, struct *sock){
+int list(int fd, struct sockaddr_ll *sock){
     int ind = 0;
     int x = 0;
     uint8_t addrs[255][6] = {0};
@@ -90,7 +90,7 @@ int list(int fd, struct *sock){
             printf("%02X:", addr[i]);
         }
         printf("%02X\n", addr[5]);
-        x++
+        x++;
         if(x == 255){
             printf("Maximum addresses reached\n");
             return -1;
@@ -100,7 +100,7 @@ int list(int fd, struct *sock){
     return 0;
 }
 
-int locate(int fd, struct *sock, struct *args){
+int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
     while(1 == 1){
         uint8_t buffer[4096];
     }
