@@ -1,0 +1,164 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <errno.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <linux/wireless.h>
+#include <linux/if_ether.h>
+#include <linux/if_packet.h>
+#include <arpa/inet.h>
+
+#define RED "\e[31m"
+#define YEL "\e[33m"
+#define GRN "\e[32m"
+#define NRM "\e[0m"
+
+struct s_args{
+    int list;
+    int mon;
+    int ind;
+    int targ_present;
+    int ifc_present;
+    char targ[17];
+    char ifc[IFNAMSIZ];
+};
+
+int usage(){
+    printf("Tool for locating the source of a wifi signal\n");
+    printf("Usage: wifilocator [ lmh ] [ i <iface> ] [ t <mac> ]\n");
+    printf("Options:\n");
+    printf("-l, --list\tList detected trasmitting addresses\n");
+    printf("-i, --interface <iface>\tSpecifies the interface to use\n");
+    printf("-m, --monitor\tPut the interface into monitor mode\n");
+    printf("-t, --target <mac>\tThe MAC address to listen for\n");
+    printf("-h, --help\tPrint this help message\n\n");
+    return 0;
+}
+
+int monitor(int fd, struct *iwr){
+    iwr->u.mode = IW_MODE_MONITOR;
+    if(ioctl(fd, SIOCSIWMODE, iwr) == -1){
+        printf("Error: %s\n", strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+
+int list(int fd, struct *sock, ){
+
+    return 0;
+}
+
+int locate(int fd, struct *sock){
+
+    return 0;
+}
+
+int main(int argc, char *argv[]){
+    if(argc == 1){
+        usage();
+        return 0;
+    }
+
+    static struct option long_options[] = {
+        {"list", no_argument, 0, 'l'},
+        {"interface", required_argument, 0, 'i'},
+        {"monitor", no_argument, 0, 'm'},
+        {"target", required_argument, 0, 't'},
+        {"help", no_argument, 0, 'h'},
+        {0,0,0,0}
+    };
+
+    struct s_args args;
+    memset(&args, 0, sizeof(args));
+    args.list = 1;
+    args.mon = 1;
+    args.ifc_present = 1;
+    args.targ_present = 1;
+    int option;
+    while(option = getopt_long(argc, argv, "li:mt:h", long_options, NULL) != -1){
+        switch(option){
+            case 'l':
+                args.list = 0;
+                break;
+            case 'i':
+                strncpy(args.ifc, optarg, sizeof(optarg));
+                args.ifc_present = 0;
+                break;
+            case 'm':
+                args.mon = 0;
+                break;
+            case 't':
+                strncpy(args.targ, optarg, sizeof(optarg));
+                args.targ_present = 0;
+                break;
+            case 'h':
+                usage();
+                break;
+            case '?':
+                usage();
+                break;
+            default:
+                usage();
+                break;
+        }
+    }
+
+    if(args.ifc_present == 1){
+        printf("Error: -i, --interface argument required\n");
+        return 1;
+    }
+
+    struct iwreq iwr;
+    memset(&iwr, 0, sizeof(iwr));
+    strncpy(iwr.ifrn_name, args.ifc, IFNAMSIZ);
+
+    struct ifreq ifr;
+    memset(&ifr, 0, sizeof(ifr));
+    strncpy(ifr.ifr_name, args.ifc, IFNAMSIZ);
+
+    struct sockaddr_ll sock;
+    memset(&sock, 0, sizeof(sock));
+    int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+    if(sockfd == -1){
+        printf("Error: %s\n", strerror(errno));
+        return 1;
+    }
+
+    if(args.mon == 0){
+        if(monitor(sockfd, &iwr) == -1){
+            return 1;
+        }
+    }
+
+    if(ioctl(sockfd, SIOCGIFINDEX, &ifr) == -1){
+        printf("Error: %s\n", strerror(errno));
+        return 1;
+    }
+    args.ind = ifr.ifr_ifindex;
+
+    iwr.u.mode = 0;
+    if(ioctl(sockfd, SIOCGIWMODE, &iwr) == -1){
+        printf("Error: %s\n", strerror(errno));
+        return 1;
+    }
+    if(iwr.u.mode != 6){
+        printf("Error: Interface must be in monitor mode\n");
+        printf("Use -m option to put the interface into monitor mode\n")
+        return 1;
+    }
+
+    if(args.list == 0){
+        list(sockfd, &sock);
+    }
+
+    if(args.targ_present == 0){
+        locate(sockfd, &sock);
+    }
+
+    return 0;
+}
