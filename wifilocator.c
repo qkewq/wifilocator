@@ -35,6 +35,7 @@ int usage(){
     printf("-i, --interface <iface>\tSpecifies the interface to use\n");
     printf("-m, --monitor\tPut the interface into monitor mode\n");
     printf("-t, --target <mac>\tThe MAC address to listen for\n");
+    printf("\t\tUsing -l and -t together will only do -l\n");
     printf("-h, --help\tPrint this help message\n\n");
     return 0;
 }
@@ -48,7 +49,7 @@ int monitor(int fd, struct *iwr){
     return 0;
 }
 
-int parseaddr(){
+int parseaddr(uint8_t *buffer){
 
 }
 
@@ -57,12 +58,38 @@ int parsedbm(){
 }
 
 int list(int fd, struct *sock){
+    int ind = 0;
     int x = 0;
     uint8_t addrs[255][6] = {0};
     while(1 == 1){
-        uint8_t buffer[4096];
+        uint8_t buffer[4096] = {0};
+        uint8_t addr[6] = {0};
         if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
             printf("Error: %s\n", strerror(errno));
+            return -1;
+        }
+        ind = parseaddr(&buffer);
+        for(int i = 0; i < 6; i++){
+            addr[i] = buffer[ind + i];
+        }
+        int con = 1;
+        for(int i = 0; i < x; i++){
+            if(memcmp(addrs[i], addr, 6) == 0){
+                con = 0;
+                break;
+            }
+        }
+        if(con == 0){
+            continue;
+        }
+        printf("%d) ", x + 1);
+        for(int i = 0; i < 5; i++){
+            printf("%02X:", addr[i]);
+        }
+        printf("%02X\n", addr[5]);
+        x++
+        if(x == 255){
+            printf("Maximum addresses reached\n");
             return -1;
         }
     }
@@ -192,18 +219,17 @@ int main(int argc, char *argv[]){
     }
 
     if(args.list == 0){
-        if(list(sockfd, &sock) == -1){
-            close(sockfd);
-            return 1;
-        }
+        list(sockfd, &sock);
+        close(sockfd);
+        return 0;
     }
 
     if(args.targ_present == 0){
-        if(locate(sockfd, &sock, &args) == -1){
-            close(sockfd);
-            return 1;
-        }
+        locate(sockfd, &sock, &args);
+        close(sockfd);
+        return 0;
     }
+
     close(sockfd);
     return 0;
 }
