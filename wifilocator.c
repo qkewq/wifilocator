@@ -31,11 +31,11 @@ int usage(){
     printf("Tool for locating the source of a wifi signal\n");
     printf("Usage: wifilocator [ lmh ] [ i <iface> ] [ t <mac> ]\n");
     printf("Options:\n");
-    printf("-l, --list\tList detected trasmitting addresses\n");
+    printf("-l, --list\t\tList detected trasmitting addresses\n");
     printf("-i, --interface <iface>\tSpecifies the interface to use\n");
-    printf("-m, --monitor\tPut the interface into monitor mode\n");
+    printf("-m, --monitor\t\tPut the interface into monitor mode\n");
     printf("-t, --target <mac>\tThe MAC address to listen for\n");
-    printf("\t\tUsing -l and -t together will only do -l\n");
+    printf("\t\t\tUsing -l and -t together will only do -l\n");
     printf("-h, --help\tPrint this help message\n\n");
     return 0;
 }
@@ -149,11 +149,7 @@ int main(int argc, char *argv[]){
             case 'h':
                 usage();
                 break;
-            case '?':
-                usage();
-                break;
             default:
-                usage();
                 break;
         }
     }
