@@ -49,7 +49,7 @@ int monitor(int fd, struct iwreq *iwr){
     return 0;
 }
 
-int parseaddr(uint8_t *buffer[4096]){
+int parseaddr(uint8_t buffer[4096]){
     uint16_t headlen;
     memcpy(&headlen, buffer[2], 2);
     int ind = headlen + 10;
