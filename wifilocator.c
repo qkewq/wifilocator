@@ -223,7 +223,7 @@ int main(int argc, char *argv[]){
     sock.sll_protocol = htons(ETH_P_ALL);
     sock.sll_ifindex = args.ind;
 
-    if(bind(sockfd, (struct sockaddr *)&sockfd, sizeof(sockfd)) == -1){
+    if(bind(sockfd, (struct sockaddr *)&sock, sizeof(sock)) == -1){
         printf("Socket Bind Error: %s\n", strerror(errno));
         close(sockfd);
         return 1;
