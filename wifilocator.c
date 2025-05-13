@@ -255,14 +255,14 @@ int main(int argc, char *argv[]){
                 args.list = 0;
                 continue;
             case 'i':
-                strncpy(args.ifc, optarg, sizeof(optarg));
+                strncpy(args.ifc, optarg, strlen(optarg));
                 args.ifc_present = 0;
                 continue;
             case 'm':
                 args.mon = 0;
                 continue;
             case 't':
-                strncpy(args.targ, optarg, sizeof(optarg));
+                strncpy(args.targ, optarg, strlen(optarg));
                 args.targ_present = 0;
                 continue;
             case 'h':
@@ -281,6 +281,13 @@ int main(int argc, char *argv[]){
         }
         else{
             return 0;
+        }
+    }
+
+    if(args.targ_present == 0){
+        if(strlen(args.targ) != 17){
+            printf("Error: MAC address should be 17 characters\n");
+            return 1;
         }
     }
 
