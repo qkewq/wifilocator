@@ -37,14 +37,14 @@ int usage(){
     printf("-m, --monitor\t\tPut the interface into monitor mode\n");
     printf("-t, --target <mac>\tThe MAC address to listen for\n");
     printf("\t\t\tUsing -l and -t together will only do -l\n");
-    printf("-h, --help\tPrint this help message\n\n");
+    printf("-h, --help\t\tPrint this help message\n\n");
     return 0;
 }
 
 int monitor(int fd, struct iwreq *iwr){
     iwr->u.mode = IW_MODE_MONITOR;
     if(ioctl(fd, SIOCSIWMODE, iwr) == -1){
-        printf("Error: %s\n", strerror(errno));
+        printf("Monitor Error: %s\n", strerror(errno));
         return -1;
     }
     return 0;
@@ -69,7 +69,7 @@ int list(int fd, struct sockaddr_ll *sock){
         uint8_t buffer[4096] = {0};
         uint8_t addr[6] = {0};
         if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
-            printf("Error: %s\n", strerror(errno));
+            printf("Recv Error: %s\n", strerror(errno));
             return -1;
         }
         ind = parseaddr(buffer);
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]){
     memset(&sock, 0, sizeof(sock));
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if(sockfd == -1){
-        printf("Error: %s\n", strerror(errno));
+        printf("Socket Creation Error: %s\n", strerror(errno));
         return 1;
     }
 
@@ -200,7 +200,7 @@ int main(int argc, char *argv[]){
     }
 
     if(ioctl(sockfd, SIOCGIFINDEX, &ifr) == -1){
-        printf("Error: %s\n", strerror(errno));
+        printf("Index Error: %s\n", strerror(errno));
         close(sockfd);
         return 1;
     }
@@ -208,7 +208,7 @@ int main(int argc, char *argv[]){
 
     iwr.u.mode = 0;
     if(ioctl(sockfd, SIOCGIWMODE, &iwr) == -1){
-        printf("Error: %s\n", strerror(errno));
+        printf("Mode Check Error: %s\n", strerror(errno));
         close(sockfd);
         return 1;
     }
@@ -224,7 +224,7 @@ int main(int argc, char *argv[]){
     sock.sll_ifindex = args.ind;
 
     if(bind(sockfd, (struct sockaddr *)&sockfd, sizeof(sockfd)) == -1){
-        printf("Error: %s\n", strerror(errno));
+        printf("Socket Bind Error: %s\n", strerror(errno));
         close(sockfd);
         return 1;
     }
