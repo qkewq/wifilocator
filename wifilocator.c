@@ -53,8 +53,42 @@ int monitor(int fd, struct iwreq *iwr){
 int parseaddr(uint8_t buffer[4096]){
     uint16_t headlen;
     memcpy(&headlen, &buffer[2], 2);
-    int ind = headlen + 10;
-    return ind;
+    uint8_t type = buffer[headlen] & 0x0C;
+    uint8_t subtype = buffer[headlen] & 0xF0;
+    uint8_t ds = buffer[headlen + 1] & 0x03;
+    if(type == 0x00){
+        return headlen + 10;
+    }
+    else if(type == 0x04){
+        switch(subtype){
+            case 0x80:
+                return headlen + 10;
+            case 0x90:
+                return headlen + 10;
+            case 0xB0:
+                return headlen + 10;
+            case 0xF0:
+                return headlen + 10;
+            default:
+                return -1;
+        }
+    }
+    else if(type == 0x08){
+        //data frame
+        switch(ds){
+            case 0x00:
+                return headlen + 10;
+            case 0x01:
+                return headlen + 10;
+            case 0x02:
+                return headlen + 10;
+            case 0x03:
+                return headlen + 10;
+            default:
+                return -1;
+        }
+    }
+    return -1;
 }
 
 int parsedbm(){
@@ -73,6 +107,9 @@ int list(int fd, struct sockaddr_ll *sock){
             return -1;
         }
         ind = parseaddr(buffer);
+        if(ind == -1){
+            continue;
+        }
         for(int i = 0; i < 6; i++){
             addr[i] = buffer[ind + i];
         }
