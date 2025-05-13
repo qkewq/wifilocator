@@ -132,7 +132,11 @@ int main(int argc, char *argv[]){
     args.ifc_present = 1;
     args.targ_present = 1;
     int option;
-    while(option = getopt_long(argc, argv, "li:mt:h", long_options, NULL) != -1){
+    while(1 == 1){
+        option = getopt_long(argc, argv, "li:mt:h", long_options, NULL);
+        if(option == -1){
+            break;
+        }
         switch(option){
             case 'l':
                 args.list = 0;
