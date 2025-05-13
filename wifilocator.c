@@ -38,6 +38,7 @@ int usage(){
     printf("-t, --target <mac>\tThe MAC address to listen for\n");
     printf("\t\t\tUsing -l and -t together will only do -l\n");
     printf("-h, --help\t\tPrint this help message\n\n");
+
     return 0;
 }
 
@@ -47,6 +48,7 @@ int monitor(int fd, struct iwreq *iwr){
         printf("Monitor Error: %s\n", strerror(errno));
         return -1;
     }
+
     return 0;
 }
 
@@ -88,10 +90,11 @@ int parseaddr(uint8_t buffer[4096]){
                 return -1;
         }
     }
+
     return -1;
 }
 
-int parsedbm(){
+int parsedbm(uint8_t buffer[4096]){
 
 }
 
@@ -142,8 +145,60 @@ int list(int fd, struct sockaddr_ll *sock){
 }
 
 int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
+    for(int i = 0; i < 17; i++){
+        if(args->targ[i] >= 97 && args->targ[i] <= 122){
+            args->targ[i] = args->targ[i] - 32;
+        }
+    }
+    uint8_t target[6] = {0};
+    int x = 0;
+    for(int i = 0; i < 6; i++){
+        if(args->targ[i + x] >= 65 && args->targ[i + x] <= 90){
+            target[i] += (args->targ[i + x] - 55) * 16;
+            x++;
+        }
+        else if(args->targ[i + x] >= 48 && args->targ[i + x] <= 57){
+            target[i] += (args->targ[i + x] - 48) * 16;
+            x++;
+        }
+        if(args->targ[i + x] >= 65 && args->targ[i + x] <= 90){
+            target[i] += (args->targ[i + x] - 55);
+            x++;
+        }
+        else if(args->targ[i + x] >= 48 && args->targ[i + x] <= 57){
+            target[i] += (args->targ[i + x] - 48);
+            x++;
+        }
+    }
+    int ind = 0;
+    int dbmind = 0;
+    int dbm = 0;
     while(1 == 1){
-        uint8_t buffer[4096];
+        uint8_t buffer[4096] = {0};
+        uint8_t addr[6] = {0};
+        if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
+            printf("Recv Error: %s\n", strerror(errno));
+            return -1;
+        }
+        ind = parseaddr(buffer);
+        if(ind == -1){
+            continue;
+        }
+        for(int i = 0; i < 6; i++){
+            addr[i] = buffer[ind + i];
+        }
+        if(memcmp(addr, target, 6) != 0){
+            continue;
+        }
+        dbmind = parsedbm(buffer);
+        if(dbmind == -1){
+            continue;
+        }
+        dbm = buffer[dbmind];
+        if(dbm > 100){
+            dbm = 100 - dbm;
+        }
+        printf("\r%d dBm", dbm);
     }
 
     return 0;
