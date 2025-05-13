@@ -76,7 +76,6 @@ int parseaddr(uint8_t buffer[4096]){
         }
     }
     else if(type == 0x08){
-        //data frame
         switch(ds){
             case 0x00:
                 return headlen + 10;
@@ -95,7 +94,26 @@ int parseaddr(uint8_t buffer[4096]){
 }
 
 int parsedbm(uint8_t buffer[4096]){
-
+    int offset = 0;
+    if(buffer[7] & 0x32 == 0x00){
+        return -1;
+    }
+    if(buffer[7] & 0x01 == 0x01){
+        offset += 8;
+    }
+    if(buffer[7] & 0x02 == 0x02){
+        offset += 1;
+    }
+    if(buffer[7] & 0x03 == 0x03){
+        offset += 1;
+    }
+    if(buffer[7] & 0x04 == 0x04){
+        offset += 2;
+    }
+    if(buffer[7] & 0x05 == 0x05){
+        offset += 2;
+    }
+    return buffer[7 + offset];
 }
 
 int list(int fd, struct sockaddr_ll *sock){
