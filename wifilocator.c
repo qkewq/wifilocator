@@ -112,6 +112,7 @@ int list(int fd, struct sockaddr_ll *sock){
         }
         for(int i = 0; i < 6; i++){
             addr[i] = buffer[ind + i];
+            addrs[x][i] = buffer[ind + i];
         }
         int con = 1;
         for(int i = 0; i < x; i++){
