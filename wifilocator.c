@@ -24,7 +24,7 @@ struct s_args{
     int help;
     int targ_present;
     int ifc_present;
-    char targ[17];
+    char targ[18];
     char ifc[IFNAMSIZ];
 };
 
