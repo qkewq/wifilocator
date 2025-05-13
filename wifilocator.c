@@ -136,29 +136,29 @@ int main(int argc, char *argv[]){
         switch(option){
             case 'l':
                 args.list = 0;
-                break;
+                continue;
             case 'i':
                 strncpy(args.ifc, optarg, sizeof(optarg));
                 args.ifc_present = 0;
-                break;
+                continue;
             case 'm':
                 args.mon = 0;
-                break;
+                continue;
             case 't':
                 strncpy(args.targ, optarg, sizeof(optarg));
                 args.targ_present = 0;
-                break;
+                continue;
             case 'h':
                 args.help = 0;
                 usage();
-                break;
+                continue;
             default:
-                break;
+                continue;
         }
     }
 
     if(args.ifc_present == 1){
-        if(args.targ_present == 0 || args.list == 0){
+        if(args.targ_present == 0 || args.list == 0 || args.mon == 0){
             printf("Error: -i, --interface argument required\n");
             return 1;
         }
