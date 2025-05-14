@@ -190,7 +190,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
     }
     int ind = 0;
     int dbmind = 0;
-    int dbm = 0;
+    int8_t dbm = 0;
     while(1 == 1){
         uint8_t buffer[4096] = {0};
         uint8_t addr[6] = {0};
@@ -213,9 +213,6 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
             continue;
         }
         dbm = buffer[dbmind];
-        if(dbm > 100){
-            dbm = 100 - dbm;
-        }
         printf("%d dBm\n", dbm);
     }
 
