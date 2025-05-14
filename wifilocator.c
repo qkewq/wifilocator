@@ -107,15 +107,15 @@ int parsedbm(uint8_t buffer[4096]){
         printf("2 ");
         offset += 1;
     }
-    if((buffer[4] & 0x03) == 0x03){
+    if((buffer[4] & 0x04) == 0x04){
         printf("3 ");
         offset += 1;
     }
-    if((buffer[4] & 0x04) == 0x04){
+    if((buffer[4] & 0x08) == 0x08){
         printf("4 ");
         offset += 2;
     }
-    if((buffer[4] & 0x05) == 0x05){
+    if((buffer[4] & 0x16) == 0x16){
         printf("5 ");
         offset += 2;
     }
