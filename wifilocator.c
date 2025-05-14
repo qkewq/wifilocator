@@ -108,12 +108,12 @@ int parsedbm(uint8_t buffer[4096]){
         offset += 1;
     }
     if((buffer[4] & 0x08) == 0x08){
-        offset += 2;
+        offset += 4;
     }
     if((buffer[4] & 0x16) == 0x16){
         offset += 2;
     }
-    return 4 + offset + 3;
+    return 8 + offset;
 }
 
 int list(int fd, struct sockaddr_ll *sock){
@@ -216,7 +216,6 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
         if(dbm > 100){
             dbm = 100 - dbm;
         }
-        printf("DBMIND: %d\n", dbmind);
         printf("%d dBm\n", dbm);
     }
 
