@@ -95,25 +95,25 @@ int parseaddr(uint8_t buffer[4096]){
 
 int parsedbm(uint8_t buffer[4096]){
     int offset = 0;
-    if(buffer[4] & 0x32 == 0x00){
+    if((buffer[4] & 0x32) == 0x00){
         return -1;
     }
-    if(buffer[4] & 0x01 == 0x01){
+    if((buffer[4] & 0x01) == 0x01){
         offset += 8;
     }
-    if(buffer[4] & 0x02 == 0x02){
+    if((buffer[4] & 0x02) == 0x02){
         offset += 1;
     }
-    if(buffer[4] & 0x03 == 0x03){
+    if((buffer[4] & 0x03) == 0x03){
         offset += 1;
     }
-    if(buffer[4] & 0x04 == 0x04){
+    if((buffer[4] & 0x04) == 0x04){
         offset += 2;
     }
-    if(buffer[4] & 0x05 == 0x05){
+    if((buffer[4] & 0x05) == 0x05){
         offset += 2;
     }
-    return buffer[4 + offset];
+    return 4 + offset + 3;
 }
 
 int list(int fd, struct sockaddr_ll *sock){
