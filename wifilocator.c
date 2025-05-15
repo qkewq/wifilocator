@@ -129,19 +129,19 @@ int bar(int8_t dbm){
     printf("%d dBm [", dbm);
     if(filled <= red){
         printf("%s", RED);
-        for(int i = 0; i < filled: i++){
+        for(int i = 0; i < filled; i++){
             printf("#");
         }
         printf("%s]", NRM);
     }
-    else if(filled > red && <= yel){
+    else if(filled > red && filled <= yel){
         int i = 0;
         printf("%s", RED);
-        for(i; i < red: i++){
+        for(i; i < red; i++){
             printf("#");
         }
         printf("%s", YEL);
-        for(i; i < filled: i++){
+        for(i; i < filled; i++){
             printf("#");
         }
         printf("%s]", NRM);
@@ -149,15 +149,15 @@ int bar(int8_t dbm){
     else{
         int i = 0;
         printf("%s", RED);
-        for(i; i < red: i++){
+        for(i; i < red; i++){
             printf("#");
         }
         printf("%s", YEL);
-        for(i; i < yel: i++){
+        for(i; i < yel; i++){
             printf("#");
         }
         printf("%s", GRN);
-        for(i; i < filled: i++){
+        for(i; i < filled; i++){
             printf("#");
         }
         printf("%s]", NRM);
