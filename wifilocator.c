@@ -162,6 +162,7 @@ int bar(int8_t dbm){
         }
         printf("%s]", NRM);
     }
+    printf("\n");
     return 0;
 }
 
@@ -262,7 +263,6 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
             continue;
         }
         dbm = buffer[dbmind];
-        printf("\33[2K\r");
         bar(dbm);
     }
 
