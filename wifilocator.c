@@ -126,7 +126,6 @@ int bar(int8_t dbm){
     int yel = ((cols - 10) / 3) * 2;
     int grn = cols - 10;
     int filled = (((cols - 10) * (100 - dbm * -1)) / 100);
-    printf("\r\33[2K\r");
     printf("%d dBm [", dbm);
     if(filled <= red){
         printf("%s", RED);
@@ -263,6 +262,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
             continue;
         }
         dbm = buffer[dbmind];
+        printf("\33[2K\r");
         bar(dbm);
     }
 
