@@ -126,7 +126,11 @@ int bar(int8_t dbm){
     int yel = ((cols - 10) / 3) * 2;
     int grn = cols - 10;
     int filled = 100 - (((cols - 10) * (dbm * -1)) / 100);
-    printf("\33[2k\r");
+    printf("\r");
+    for(int i = 0; i < cols; i++){
+        printf(" ");
+    }
+    printf("\r");
     printf("%d dBm [", dbm);
     if(filled <= red){
         printf("%s", RED);
