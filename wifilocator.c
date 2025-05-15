@@ -125,14 +125,14 @@ int bar(int8_t dbm){
     int red = (cols - 10) / 3;
     int yel = ((cols - 10) / 3) * 2;
     int grn = cols - 10;
-    int filled = ((cols - 10) * (dbm * -1)) / 100;
+    int filled = 100 - (((cols - 10) * (dbm * -1)) / 100);
     printf("%d dBm [", dbm);
     if(filled <= red){
         printf("%s", RED);
         for(int i = 0; i < filled; i++){
             printf("#");
         }
-        printf("%s]", NRM);
+        printf("%s]\r", NRM);
     }
     else if(filled > red && filled <= yel){
         int i = 0;
@@ -144,7 +144,7 @@ int bar(int8_t dbm){
         for(i; i < filled; i++){
             printf("#");
         }
-        printf("%s]", NRM);
+        printf("%s]\r", NRM);
     }
     else{
         int i = 0;
@@ -160,7 +160,7 @@ int bar(int8_t dbm){
         for(i; i < filled; i++){
             printf("#");
         }
-        printf("%s]", NRM);
+        printf("%s]\r", NRM);
     }
     return 0;
 }
@@ -262,7 +262,6 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
             continue;
         }
         dbm = buffer[dbmind];
-        printf("%d dBm\n", dbm);
         bar(dbm);
     }
 
