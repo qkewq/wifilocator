@@ -116,6 +116,55 @@ int parsedbm(uint8_t buffer[4096]){
     return 8 + offset;
 }
 
+int bar(int8_t dbm){
+    struct winsize ws;
+    if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){
+        return -1;
+    }
+    int cols = ws.ws_col;
+    int red = (cols - 10) / 3;
+    int yel = ((cols - 10) / 3) * 2;
+    int grn = cols - 10;
+    int filled = ((cols - 10) * (dbm * -1)) / 100;
+    printf("%d dBm [", dbm);
+    if(filled <= red){
+        printf("%s", RED);
+        for(int i = 0; i < filled: i++){
+            printf("#");
+        }
+        printf("%s]", NRM);
+    }
+    else if(filled > red && <= yel){
+        int i = 0;
+        printf("%s", RED);
+        for(i; i < red: i++){
+            printf("#");
+        }
+        printf("%s", YEL);
+        for(i; i < filled: i++){
+            printf("#");
+        }
+        printf("%s]", NRM);
+    }
+    else{
+        int i = 0;
+        printf("%s", RED);
+        for(i; i < red: i++){
+            printf("#");
+        }
+        printf("%s", YEL);
+        for(i; i < yel: i++){
+            printf("#");
+        }
+        printf("%s", GRN);
+        for(i; i < filled: i++){
+            printf("#");
+        }
+        printf("%s]", NRM);
+    }
+    return 0;
+}
+
 int list(int fd, struct sockaddr_ll *sock){
     int ind = 0;
     int x = 0;
@@ -214,6 +263,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
         }
         dbm = buffer[dbmind];
         printf("%d dBm\n", dbm);
+        bar(dbm);
     }
 
     return 0;
