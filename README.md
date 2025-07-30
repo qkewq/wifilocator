@@ -12,3 +12,4 @@ Checklist
 - Parse radiotap header flags
 - Parse addr
 - Display signal strength bar
+- Add a constant ping or arping functionality
