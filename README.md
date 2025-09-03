@@ -13,3 +13,4 @@ Checklist
 - Parse addr
 - Display signal strength bar
 - Add a constant ping or arping functionality
+- Add some sort of name resolution
