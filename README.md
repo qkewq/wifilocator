@@ -1,6 +1,6 @@
 # wifilocator
 Locate wifi device or access point based on received signal strength  
-Works off of radiotap headers added by the interface drivers  
+Works off of radiotap headers added by the antenna's drivers  
 Must have the dbm Antenna Signal flag set  
 
 Checklist
