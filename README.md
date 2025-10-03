@@ -1,7 +1,8 @@
 # wifilocator
 Locate wifi device or access point based on received signal strength  
 Works off of radiotap headers added by the antenna's drivers  
-Must have the dbm Antenna Signal flag set  
+The antenna must support monitor mode  
+Must have the dbm Antenna Signal flag set in the radiotap header  
 
 Checklist
 - Take command line arguments
