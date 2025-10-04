@@ -29,8 +29,8 @@ struct s_args{ // Command line arguments
 };
 
 struct s_outops{ // Output options
-  int max_addrs = 32;
-  int no_frame_counter = 1;
+  int max_addrs;
+  int no_frame_counter;
 };
 
 int usage(){ // Usage statement
@@ -319,6 +319,9 @@ int main(int argc, char *argv[]){ // Main
   };
 
   struct s_outops outops;
+  memset(&outops, 0, sizeof(outops));
+  outops.max_addrs = 32;
+  outops.no_frame_counter = 1;
   struct s_args args;
   memset(&args, 0, sizeof(args));
   args.list = 1;
