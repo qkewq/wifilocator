@@ -202,7 +202,7 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
       for(int i = 0; i < 5; i++){
         printf("%02X:", addrs[duplicate][i]);
       }
-      printf("%02X");
+      printf("%02X", addrs[duplicate][5]);
       printf(" %d Frames Received", frames_recv[duplicate]);
       printf("\033[%dE", x - duplicate);
       continue;
