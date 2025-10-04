@@ -197,7 +197,7 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
     }
     if(duplicate != -1){
       printf("\033[%dF", x - duplicate);
-      printf("\033[0K");
+      printf("\033[2K");
       printf("%d) ", duplicate + 1);
       for(int i = 0; i < 5; i++){
         printf("%02X:", addrs[duplicate][i]);
