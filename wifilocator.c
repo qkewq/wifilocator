@@ -31,6 +31,7 @@ struct s_args{ // Command line arguments
 struct s_outops{ // Output options
   int max_addrs;
   int no_frame_counter;
+  int no_bar_in_place;
 };
 
 int usage(){ // Usage statement
@@ -46,6 +47,7 @@ int usage(){ // Usage statement
   printf("Output Options:\n");
   printf("--maximum-addresses <number>\tMaximum addresses in list scan\n");
   printf("--no-frame-counter\t\tDo not output frame counters\n");
+  printf("--no-bar-in-place\tOutput dBm bars on consecutive lines\n");
   printf("\n");
 
   return 0;
@@ -127,7 +129,7 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
   return 8 + offset;
 }
 
-int bar(int8_t dbm){ // Print bar
+int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   struct winsize ws;
   if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){ // Get window size
     return -1;
@@ -172,6 +174,9 @@ int bar(int8_t dbm){ // Print bar
       printf("#");
     }
     printf("%s]", NRM);
+  }
+  if(no_bar_in_place == 0){
+    printf("\n");
   }
   return 0;
 }
@@ -300,9 +305,11 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
     frames_received += 1;
     dbm = buffer[dbmind];
     printf("\033[1F\033[2K");
-    bar(dbm);
+    bar(dbm, outops->no_bar_in_place);
     printf("\033[1E\033[2K");
-    printf("%d Frames Received", frames_received);
+    if(outops->no_frame_counter == 0){
+      printf("%d Frames Received", frames_received);
+    }
   }
 
   return 0;
@@ -329,6 +336,7 @@ int main(int argc, char *argv[]){ // Main
   memset(&outops, 0, sizeof(outops));
   outops.max_addrs = 32;
   outops.no_frame_counter = 1;
+  outops.no_bar_in_place = 1;
   struct s_args args;
   memset(&args, 0, sizeof(args));
   args.list = 1;
@@ -350,6 +358,9 @@ int main(int argc, char *argv[]){ // Main
         }
         else if(strcmp(long_options[option_index].name, "no-frame-counter") == 0){
           outops.no_frame_counter = 0;
+        }
+        else if(strcmp(long_options[option_index].name, "no-bar-in-place") == 0){
+          outops.no_bar_in_place = 0;
         }
         continue;
       case 'l':
