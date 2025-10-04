@@ -351,6 +351,7 @@ int main(int argc, char *argv[]){ // Main
         else if(strcmp(long_options[option_index].name, "no-frame-counter") == 0){
           outops.no_frame_counter = 0;
         }
+        continue;
       case 'l':
         args.list = 0;
         continue;
