@@ -196,14 +196,13 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
       }
     }
     if(duplicate != -1){
-      int n = duplicate + 1;
-      int digits = 0;
-      while(n > 0){
-        n = n / 10;
-        digits++;
-      }
       printf("\033[%dF", x - duplicate);
-      printf("\033[%dG\033[0K", digits + 20);
+      printf("\033[0K");
+      printf("%d) ", duplicate + 1);
+      for(int i = 0; i < 5; i++){
+        printf("%02X:", addrs[duplicate][i])
+      }
+      printf("%02X")
       printf(" %d Frames Received", frames_recv[duplicate]);
       printf("\033[%dE", x - duplicate);
       continue;
