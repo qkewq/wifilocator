@@ -255,7 +255,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
   }
   uint8_t target[6] = {0};
   int x = 0;
-  for(int i = 0; i < 6; i++){
+  for(int i = 0; i < 6; i++){ // Converting MAC to integer
     if(args->targ[i + x] >= 65 && args->targ[i + x] <= 90){
       target[i] += (args->targ[i + x] - 55) * 16;
       x++;
