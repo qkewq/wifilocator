@@ -196,7 +196,7 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
       }
     }
     if(duplicate != -1){
-      int n = duplicate;
+      int n = duplicate + 1;
       int digits = 0;
       while(n > 0){
         n = n / 10;
@@ -218,7 +218,7 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
     for(int i = 0; i < 5; i++){
       printf("%02X:", addr[i]);
     }
-    printf("%02X\n", addr[5]);
+    printf("%02X 1 Frame Received\n", addr[5]);
     x++;
     if(x == 255){
       printf("Maximum addresses reached\n");
