@@ -341,7 +341,7 @@ int main(int argc, char *argv[]){ // Main
         if(strcmp(long_options[option_index].name, "maximum-addresses") == 0){
           outops.max_addrs = atoi(optarg);
         }
-        else if(strcmp(long_options[option_index].name, "maximum-addresses") == 0){
+        else if(strcmp(long_options[option_index].name, "no-frame-counter") == 0){
           outops.no_frame_counter = 0;
         }
       case 'l':
