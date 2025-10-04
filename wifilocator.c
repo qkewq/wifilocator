@@ -17,18 +17,18 @@
 #define GRN "\e[32m"
 #define NRM "\e[0m"
 
-struct s_args{
-    int list;
-    int mon;
-    int ind;
-    int help;
-    int targ_present;
-    int ifc_present;
-    char targ[18];
-    char ifc[IFNAMSIZ];
+struct s_args{ // Command line arguments struct
+    int list; // List flag set
+    int mon; // Set monitor mode flag set
+    int ind; // Index of interface
+    int help; // Help flag set
+    int targ_present; // Target flag set
+    int ifc_present; // Interface flag set
+    char targ[18]; // Target addr
+    char ifc[IFNAMSIZ]; // Interface name
 };
 
-int usage(){
+int usage(){ // Usage statement
     printf("Tool for locating the source of a wifi signal\n");
     printf("Usage: wifilocator [ lmh ] [ i <iface> ] [ t <mac> ]\n");
     printf("Options:\n");
@@ -42,7 +42,7 @@ int usage(){
     return 0;
 }
 
-int monitor(int fd, struct iwreq *iwr){
+int monitor(int fd, struct iwreq *iwr){ // Enables monitor mode
     iwr->u.mode = IW_MODE_MONITOR;
     if(ioctl(fd, SIOCSIWMODE, iwr) == -1){
         printf("Monitor Error: %s\n", strerror(errno));
@@ -52,12 +52,13 @@ int monitor(int fd, struct iwreq *iwr){
     return 0;
 }
 
-int parseaddr(uint8_t buffer[4096]){
+int parseaddr(uint8_t buffer[4096]){ // Get the tx addr offset in the frame
     uint16_t headlen;
     memcpy(&headlen, &buffer[2], 2);
     uint8_t type = buffer[headlen] & 0x0C;
     uint8_t subtype = buffer[headlen] & 0xF0;
     uint8_t ds = buffer[headlen + 1] & 0x03;
+    // Checking for frame type and subtype to get addr offset
     if(type == 0x00){
         return headlen + 10;
     }
@@ -93,7 +94,8 @@ int parseaddr(uint8_t buffer[4096]){
     return -1;
 }
 
-int parsedbm(uint8_t buffer[4096]){
+int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
+    // Checking for flags and adjusting the offset
     int offset = 0;
     if((buffer[4] & 0x32) == 0x00){
         return -1;
@@ -116,9 +118,9 @@ int parsedbm(uint8_t buffer[4096]){
     return 8 + offset;
 }
 
-int bar(int8_t dbm){
+int bar(int8_t dbm){ // Print bar
     struct winsize ws;
-    if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){
+    if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){ // Get window size
         return -1;
     }
     int cols = ws.ws_col;
@@ -166,7 +168,7 @@ int bar(int8_t dbm){
     return 0;
 }
 
-int list(int fd, struct sockaddr_ll *sock){
+int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
     int ind = 0;
     int x = 0;
     uint8_t addrs[255][6] = {0};
@@ -213,7 +215,7 @@ int list(int fd, struct sockaddr_ll *sock){
 }
 
 int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
-    for(int i = 0; i < 17; i++){
+    for(int i = 0; i < 17; i++){ // Upper casing MAC addr
         if(args->targ[i] >= 97 && args->targ[i] <= 122){
             args->targ[i] = args->targ[i] - 32;
         }
@@ -269,13 +271,13 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
     return 0;
 }
 
-int main(int argc, char *argv[]){
-    if(argc == 1){
+int main(int argc, char *argv[]){ // Main
+    if(argc == 1){ // No arguments
         usage();
         return 0;
     }
 
-    static struct option long_options[] = {
+    static struct option long_options[] = { // Flags
         {"list", no_argument, 0, 'l'},
         {"interface", required_argument, 0, 'i'},
         {"monitor", no_argument, 0, 'm'},
@@ -292,7 +294,7 @@ int main(int argc, char *argv[]){
     args.ifc_present = 1;
     args.targ_present = 1;
     int option;
-    while(1 == 1){
+    while(1 == 1){ // Get flags and options
         option = getopt_long(argc, argv, "li:mt:h", long_options, NULL);
         if(option == -1){
             break;
@@ -321,7 +323,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    if(args.ifc_present == 1){
+    if(args.ifc_present == 1){ // Check for interface argument
         if(args.targ_present == 0 || args.list == 0 || args.mon == 0){
             printf("Error: -i, --interface argument required\n");
             return 1;
@@ -331,9 +333,10 @@ int main(int argc, char *argv[]){
         }
     }
 
-    if(args.targ_present == 0){
+    if(args.targ_present == 0){ // Check MAC addr format
         if(strlen(args.targ) != 17){
-            printf("Error: MAC address should be 17 characters\n");
+            printf("Error: MAC address should be 17 characters, ");
+            printf("xx:xx:xx:xx:xx:xx\n")
             return 1;
         }
     }
@@ -346,7 +349,7 @@ int main(int argc, char *argv[]){
     memset(&ifr, 0, sizeof(ifr));
     strncpy(ifr.ifr_name, args.ifc, IFNAMSIZ);
 
-    struct sockaddr_ll sock;
+    struct sockaddr_ll sock; // Create raw socket
     memset(&sock, 0, sizeof(sock));
     int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if(sockfd == -1){
@@ -354,19 +357,19 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    if(args.mon == 0){
+    if(args.mon == 0){ // Set monitor mode
         if(monitor(sockfd, &iwr) == -1){
             close(sockfd);
             return 1;
         }
     }
 
-    if(args.list == 1 && args.targ_present == 1){
+    if(args.list == 1 && args.targ_present == 1){ // Exit if done
         close(sockfd);
         return 0;
     }
 
-    if(ioctl(sockfd, SIOCGIFINDEX, &ifr) == -1){
+    if(ioctl(sockfd, SIOCGIFINDEX, &ifr) == -1){ // Get index of interface
         printf("Index Error: %s\n", strerror(errno));
         close(sockfd);
         return 1;
@@ -374,12 +377,12 @@ int main(int argc, char *argv[]){
     args.ind = ifr.ifr_ifindex;
 
     iwr.u.mode = 0;
-    if(ioctl(sockfd, SIOCGIWMODE, &iwr) == -1){
+    if(ioctl(sockfd, SIOCGIWMODE, &iwr) == -1){ // Check mode
         printf("Mode Check Error: %s\n", strerror(errno));
         close(sockfd);
         return 1;
     }
-    if(iwr.u.mode != 6){
+    if(iwr.u.mode != 6){ // Check for monitor mode
         printf("Error: Interface must be in monitor mode\n");
         printf("Use -m option to put the interface into monitor mode\n");
         close(sockfd);
@@ -390,19 +393,19 @@ int main(int argc, char *argv[]){
     sock.sll_protocol = htons(ETH_P_ALL);
     sock.sll_ifindex = args.ind;
 
-    if(bind(sockfd, (struct sockaddr *)&sock, sizeof(sock)) == -1){
+    if(bind(sockfd, (struct sockaddr *)&sock, sizeof(sock)) == -1){ // Bind raw socket to index
         printf("Socket Bind Error: %s\n", strerror(errno));
         close(sockfd);
         return 1;
     }
 
-    if(args.list == 0){
+    if(args.list == 0){ // Call list and close
         list(sockfd, &sock);
         close(sockfd);
         return 0;
     }
 
-    if(args.targ_present == 0){
+    if(args.targ_present == 0){ // Call locate and close
         locate(sockfd, &sock, &args);
         close(sockfd);
         return 0;
