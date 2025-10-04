@@ -197,7 +197,7 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
             continue;
         }
         for(int i = 0; i < 6; i++){
-            addrs[x][i] = buffer[ind + i];
+            addrs[x][i] = addr[i];
         }
         printf("%d) ", x + 1);
         for(int i = 0; i < 5; i++){
