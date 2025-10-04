@@ -203,7 +203,7 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
         digits++;
       }
       printf("\033[%dF", x - duplicate);
-      printf("\033[%dG\033[0K", digits + 2 + 18 );
+      printf("\033[%dG\033[0K", digits + 21);
       printf("%d Frames Received", frames_recv[duplicate]);
       printf("\033[%dE", x - duplicate);
       continue;
