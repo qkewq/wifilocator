@@ -176,7 +176,7 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
     printf("%s]", NRM);
   }
   if(no_bar_in_place == 0){
-    printf("\n");
+    printf("\n\n");
   }
   return 0;
 }
