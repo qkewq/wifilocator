@@ -307,7 +307,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
     printf("\033[1F\033[2K");
     bar(dbm, outops->no_bar_in_place);
     printf("\033[1E\033[2K");
-    if(outops->no_frame_counter == 0){
+    if(outops->no_frame_counter == 1){
       printf("%d Frames Received", frames_received);
     }
   }
@@ -329,7 +329,7 @@ int main(int argc, char *argv[]){ // Main
     {"help", no_argument, 0, 'h'},
     {"maximum-addresses", required_argument, 0, 0},
     {"no-frame-counter", no_argument, 0, 0},
-    {"no-bar-in-palce", no_argument, 0, 0},
+    {"no-bar-in-place", no_argument, 0, 0},
     {0,0,0,0}
   };
 
