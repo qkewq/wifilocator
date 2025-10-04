@@ -329,6 +329,7 @@ int main(int argc, char *argv[]){ // Main
     {"help", no_argument, 0, 'h'},
     {"maximum-addresses", required_argument, 0, 0},
     {"no-frame-counter", no_argument, 0, 0},
+    {"no-bar-in-palce", no_argument, 0, 0},
     {0,0,0,0}
   };
 
