@@ -234,6 +234,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
     if(outops->no_frame_counter == 1){
       printf(" 1 Frame Received\n");
     }
+    else{
+      printf("\n");
+    }
     x++;
     if(x == outops->max_addrs){
       printf("Maximum addresses reached\n");
