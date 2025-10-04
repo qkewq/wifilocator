@@ -17,7 +17,7 @@
 #define GRN "\e[32m"
 #define NRM "\e[0m"
 
-struct s_args{ // Command line arguments struct
+struct s_args{ // Command line arguments
   int list; // List flag set
   int mon; // Set monitor mode flag set
   int ind; // Index of interface
@@ -26,6 +26,11 @@ struct s_args{ // Command line arguments struct
   int ifc_present; // Interface flag set
   char targ[18]; // Target addr
   char ifc[IFNAMSIZ]; // Interface name
+};
+
+struct s_outops{ // Output options
+  int max_addrs = 32;
+  int no_frame_counter = 1;
 };
 
 int usage(){ // Usage statement
@@ -38,6 +43,10 @@ int usage(){ // Usage statement
   printf("-t, --target <mac>\tThe MAC address to listen for\n");
   printf("\t\t\tUsing -l and -t together will only do -l\n");
   printf("-h, --help\t\tPrint this help message\n\n");
+  printf("Output Options:\n");
+  printf("--maximum-addresses <number>\tMaximum addresses in list scan\n");
+  printf("--no-frame-counter\t\tDo not output frame counters\n");
+  printf("\n");
 
   return 0;
 }
@@ -168,11 +177,13 @@ int bar(int8_t dbm){ // Print bar
   return 0;
 }
 
-int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
+int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List recved addrs
   int ind = 0;
   int x = 0;
-  uint8_t addrs[255][6] = {0};
-  int frames_recv[255] = {0};
+  uint8_t addrs[outops->max_addrs][6];
+  int frames_recv[outops->max_addrs];
+  memset(addrs, 0, sizeof(addrs));
+  memset(frames_recv, 0, sizeof(frames_recv));
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
@@ -196,15 +207,17 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
       }
     }
     if(duplicate != -1){
-      printf("\033[%dF", x - duplicate);
-      printf("\033[2K");
-      printf("%d) ", duplicate + 1);
-      for(int i = 0; i < 5; i++){
-        printf("%02X:", addrs[duplicate][i]);
+      if(outops->no_frame_counter == 1){
+        printf("\033[%dF", x - duplicate);
+        printf("\033[2K");
+        printf("%d) ", duplicate + 1);
+        for(int i = 0; i < 5; i++){
+          printf("%02X:", addrs[duplicate][i]);
+        }
+        printf("%02X", addrs[duplicate][5]);
+        printf(" %d Frames Received", frames_recv[duplicate]);
+        printf("\033[%dE", x - duplicate);
       }
-      printf("%02X", addrs[duplicate][5]);
-      printf(" %d Frames Received", frames_recv[duplicate]);
-      printf("\033[%dE", x - duplicate);
       continue;
     }
     else{
@@ -217,9 +230,12 @@ int list(int fd, struct sockaddr_ll *sock){ // List recved addrs
     for(int i = 0; i < 5; i++){
       printf("%02X:", addr[i]);
     }
-    printf("%02X 1 Frame Received\n", addr[5]);
+    printf("%02X", addr[5]);
+    if(outops->no_frame_counter == 1){
+      printf(" 1 Frame Received\n");
+    }
     x++;
-    if(x == 255){
+    if(x == outops->max_addrs){
       printf("Maximum addresses reached\n");
       return -1;
     }
@@ -297,9 +313,12 @@ int main(int argc, char *argv[]){ // Main
     {"monitor", no_argument, 0, 'm'},
     {"target", required_argument, 0, 't'},
     {"help", no_argument, 0, 'h'},
+    {"maximum-addresses", required_argument, 0, 0},
+    {"no-frame-counter", no_argument, 0, 0},
     {0,0,0,0}
   };
 
+  struct s_outops outops;
   struct s_args args;
   memset(&args, 0, sizeof(args));
   args.list = 1;
@@ -309,11 +328,19 @@ int main(int argc, char *argv[]){ // Main
   args.targ_present = 1;
   int option;
   while(1 == 1){ // Get flags and options
-    option = getopt_long(argc, argv, "li:mt:h", long_options, NULL);
+    int option_index = 0;
+    option = getopt_long(argc, argv, "li:mt:h", long_options, &option_index);
     if(option == -1){
       break;
-    }
+    } 
     switch(option){
+      case 0:
+        if(strcmp(long_options[option_index].name, "maximum-addresses") == 0){
+          outops.max_addrs = atoi(optarg);
+        }
+        else if(strcmp(long_options[option_index].name, "maximum-addresses") == 0){
+          outops.no_frame_counter = 0;
+        }
       case 'l':
         args.list = 0;
         continue;
@@ -414,7 +441,7 @@ int main(int argc, char *argv[]){ // Main
   }
 
   if(args.list == 0){ // Call list and close
-    list(sockfd, &sock);
+    list(sockfd, &sock, &outops);
     close(sockfd);
     return 0;
   }
