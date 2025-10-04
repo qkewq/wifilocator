@@ -173,7 +173,6 @@ int bar(int8_t dbm){ // Print bar
     }
     printf("%s]", NRM);
   }
-  printf("\n");
   return 0;
 }
 
@@ -276,6 +275,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
   int ind = 0;
   int dbmind = 0;
   int8_t dbm = 0;
+  int frames_received = 0;
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
@@ -297,8 +297,12 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
     if(dbmind == -1){
       continue;
     }
+    frames_received += 1;
     dbm = buffer[dbmind];
+    printf("\033[1F\033[2K");
     bar(dbm);
+    printf("\033[1E\033[2K");
+    printf("%d Frames Received", frames_received);
   }
 
   return 0;
