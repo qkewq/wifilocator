@@ -247,7 +247,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
   return 0;
 }
 
-int locate(int fd, struct sockaddr_ll *sock, struct s_args *args){
+int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){
   for(int i = 0; i < 17; i++){ // Upper casing MAC addr
     if(args->targ[i] >= 97 && args->targ[i] <= 122){
       args->targ[i] = args->targ[i] - 32;
@@ -453,7 +453,7 @@ int main(int argc, char *argv[]){ // Main
   }
 
   if(args.targ_present == 0){ // Call locate and close
-    locate(sockfd, &sock, &args);
+    locate(sockfd, &sock, &args, &outops);
     close(sockfd);
     return 0;
   }
