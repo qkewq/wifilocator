@@ -336,7 +336,7 @@ int main(int argc, char *argv[]){ // Main
     if(args.targ_present == 0){ // Check MAC addr format
         if(strlen(args.targ) != 17){
             printf("Error: MAC address should be 17 characters, ");
-            printf("xx:xx:xx:xx:xx:xx\n")
+            printf("xx:xx:xx:xx:xx:xx\n");
             return 1;
         }
     }
