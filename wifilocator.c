@@ -35,6 +35,7 @@ struct s_outops{ // Output options
 };
 
 int usage(){ // Usage statement
+  /*
   printf("Tool for locating the source of a wifi signal\n");
   printf("Usage: wifilocator [ lmh ] [ i <iface> ] [ t <mac> ]\n");
   printf("Options:\n");
@@ -49,6 +50,30 @@ int usage(){ // Usage statement
   printf("--no-frame-counter\t\tDo not output frame counters\n");
   printf("--no-bar-in-place\tOutput dBm bars on consecutive lines\n");
   printf("\n");
+  */
+  printf("\nA tool for locating the source of a wireless signal\n
+    or for listing detected transmitting addresses\n\n
+    Usage: wifilocator [ OPTIONS... ]\n\n
+    Options:\n
+    -l, --list\t\t\tList detected transmitting addresses\n
+    -i, --interface <interface>\tSpecifies the interface to use\n
+    -m, --monitor\t\t\tPut the interface into monitor mode\n
+    -t, --target <mac address>\tThe MAC address to listen for\n
+    -h, --help\t\t\tDisplay this help message\n\n
+    Output options:\n
+    --maximum-addresses <num>\tThe maximum number of addresses 
+    to be\n\t\t\t\tlisted by the --list option, defaul 32\n
+    --no-frame-counter\t\tDo not output frame counters\n
+    --no-bar-in-place\t\tOutput dBm bar on consecutive lines\n\n
+    Notes:\n
+    The interface must be in monitor mode to operate\n
+    If --list and --target are used together, 
+    --target will be ignored\nThe MAC address should be six groups 
+    of seperated hex digits, any case\n\n
+    Examples:\n
+    wifilocator -i wlan0 -m -i\n
+    wifilocator -i wlan0 -t xx:xx:xx:xx:xx:xx\n
+    wifilocator --interface --list --no-frame-counter\n\n");
 
   return 0;
 }
