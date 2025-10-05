@@ -463,6 +463,7 @@ int main(int argc, char *argv[]){ // Main
     return 1;
   }
 
+  printf("\n");
   if(args.list == 0){ // Call list and close
     list(sockfd, &sock, &outops);
     close(sockfd);
