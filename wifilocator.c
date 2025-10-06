@@ -89,16 +89,17 @@ int monitor(int fd, struct iwreq *iwr){ // Enables monitor mode
 }
 
 int parseaddr(uint8_t buffer[4096]){ // Get the tx addr offset in the frame
+  // Fuck 802.11 addressing
   uint16_t headlen;
-  memcpy(&headlen, &buffer[2], 2);
-  uint8_t type = buffer[headlen] & 0x0C;
-  uint8_t subtype = buffer[headlen] & 0xF0;
-  uint8_t ds = buffer[headlen + 1] & 0x03;
+  memcpy(&headlen, &buffer[2], 2); // Radiotap header length
+  uint8_t type = buffer[headlen] & 0x0C; // Frame type
+  uint8_t subtype = buffer[headlen] & 0xF0; // Frame subtype
+  uint8_t ds = buffer[headlen + 1] & 0x03; // DS bits
   // Checking for frame type and subtype to get addr offset
-  if(type == 0x00){
+  if(type == 0x00){ // Management Frame
     return headlen + 10;
   }
-  else if(type == 0x04){
+  else if(type == 0x04){ // Control Frame
     switch(subtype){
       case 0x80:
         return headlen + 10;
@@ -112,7 +113,7 @@ int parseaddr(uint8_t buffer[4096]){ // Get the tx addr offset in the frame
         return -1;
     }
   }
-  else if(type == 0x08){
+  else if(type == 0x08){ // Data Frame
     switch(ds){
       case 0x00:
         return headlen + 10;
@@ -207,6 +208,10 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
 }
 
 int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List recved addrs
+  if(outops->max_addrs == 0){
+    printf("Maximum addresses reached\n");
+    return -1;
+  }
   int ind = 0;
   int x = 0;
   uint8_t addrs[outops->max_addrs][6];
