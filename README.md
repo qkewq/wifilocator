@@ -40,6 +40,16 @@ wifilocator --interface --list --no-frame-counter
 
 <br>
 
+Example out put from <code>sudo wifilocator -i wlan0 -l --maximum-addresses 16</code>  
+![List Example](https://github.com/qkewq/wifilocator/tree/main/img/listaddr.png)
+
+<br>
+
+Example outout from <code>sudo wifilocator -i wlan0 -t C2:94:F6:00:FA:83 --no-bar-in-place</code>  
+![Scan Example](https://github.com/qkewq/wifilocator/tree/main/img/locaddr.png)
+
+<br>
+
 Checklist
 - Take command line arguments
   - MAC to look for
