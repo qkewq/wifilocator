@@ -22,6 +22,7 @@ Options:
 -h, --help					Display this help message
 
 Output Options:
+--bssid-only				Only scan for access points
 --maximum-addresses <num>	The maximum number of addresses to be
 							listed by the --list option, default 32
 --no-frame-counter			Do not output frame counters
