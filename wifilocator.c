@@ -17,7 +17,7 @@
 #define GRN "\e[32m"
 #define NRM "\e[0m"
 
-// Note: I aws very stupid when I started this, 0 is a set bit and 1 is unset
+// Note: I was very stupid when I started this, 0 is a set bit and 1 is an unset bit
 
 struct s_args{ // Command line arguments
   int list; // List flag set
