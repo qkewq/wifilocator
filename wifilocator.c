@@ -103,7 +103,7 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
   int index = 0; // Index of addr
   // Checking for frame type and subtype to get addr offset
   if(type == 0x00){ // Management Frame
-    if(memcmp(buffer[headlen + 10], buffer[headlen + 16], 6) == 0){
+    if(memcmp(&buffer[headlen + 10], &buffer[headlen + 16], 6) == 0){
       bssid = 0;
     }
     index = headlen + 10;
@@ -145,7 +145,7 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
   else if(type == 0x08){ // Data Frame
     switch(ds){
       case 0x00:
-        if(memcmp(buffer[headlen + 10], buffer[headlen + 16], 6) == 0){
+        if(memcmp(&buffer[headlen + 10], &buffer[headlen + 16], 6) == 0){
           bssid = 0;
         }
         index = headlen + 10;
