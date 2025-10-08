@@ -17,6 +17,8 @@
 #define GRN "\e[32m"
 #define NRM "\e[0m"
 
+// Note: I aws very stupid when I started this, 0 is a set bit and 1 is unset
+
 struct s_args{ // Command line arguments
   int list; // List flag set
   int mon; // Set monitor mode flag set
@@ -32,6 +34,7 @@ struct s_outops{ // Output options
   int max_addrs;
   int no_frame_counter;
   int no_bar_in_place;
+  int bssid_only;
 };
 
 int usage(){ // Usage statement
@@ -61,6 +64,7 @@ int usage(){ // Usage statement
     "-t, --target <mac address>\tThe MAC address to listen for\n"
     "-h, --help\t\t\tDisplay this help message\n\n"
     "Output options:\n"
+    "--bssid-only\t\t\tOnly scan for access points\n"
     "--maximum-addresses <num>\tThe maximum number of addresses "
     "to be\n\t\t\t\tlisted by the --list option, defaul 32\n"
     "--no-frame-counter\t\tDo not output frame counters\n"
@@ -88,27 +92,52 @@ int monitor(int fd, struct iwreq *iwr){ // Enables monitor mode
   return 0;
 }
 
-int parseaddr(uint8_t buffer[4096]){ // Get the tx addr offset in the frame
+int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset in the frame
   // Fuck 802.11 addressing
   uint16_t headlen;
   memcpy(&headlen, &buffer[2], 2); // Radiotap header length
   uint8_t type = buffer[headlen] & 0x0C; // Frame type
   uint8_t subtype = buffer[headlen] & 0xF0; // Frame subtype
   uint8_t ds = buffer[headlen + 1] & 0x03; // DS bits
+  int bssid = 1; // Addr is a bssid
+  int index = 0; // Index of addr
   // Checking for frame type and subtype to get addr offset
   if(type == 0x00){ // Management Frame
-    return headlen + 10;
+    if(memcmp(buffer[headlen + 10], buffer[headlen + 16], 6) == 0){
+      bssid = 0;
+    }
+    index = headlen + 10;
   }
   else if(type == 0x04){ // Control Frame
     switch(subtype){
-      case 0x80:
-        return headlen + 10;
-      case 0x90:
-        return headlen + 10;
-      case 0xB0:
-        return headlen + 10;
-      case 0xF0:
-        return headlen + 10;
+      case 0x40: // Beamforming
+        bssid = 0;
+        index = headlen + 10;
+        break;
+      case 0x50: // NDP Announcement
+        index = headlen + 10;
+        break;
+      case 0x80: // Block Ack Request
+        index = headlen + 10;
+        break;
+      case 0x90: // Block Ack
+        bssid = 0;
+        index = headlen + 10;
+        break;
+      case 0xA0: // PS-Poll
+        index = headlen + 10;
+        break;
+      case 0xB0: // RTS
+        index = headlen + 10;
+        break;
+      case 0xE0: // CF-End
+        bssid = 0;
+        index = headlen + 10;
+        break;
+      case 0xF0: // CF-End+CF-Ack
+        bssid = 0;
+        index = headlen + 10;
+        break;
       default:
         return -1;
     }
@@ -116,16 +145,34 @@ int parseaddr(uint8_t buffer[4096]){ // Get the tx addr offset in the frame
   else if(type == 0x08){ // Data Frame
     switch(ds){
       case 0x00:
-        return headlen + 10;
+        if(memcmp(buffer[headlen + 10], buffer[headlen + 16], 6) == 0){
+          bssid = 0;
+        }
+        index = headlen + 10;
+        break;
       case 0x01:
-        return headlen + 10;
+        bssid = 0;
+        index = headlen + 10;
+        break;
       case 0x02:
-        return headlen + 10;
+        index = headlen + 10;
+        break;
       case 0x03:
-        return headlen + 10;
+        bssid = 0;
+        index = headlen + 10;
+        break;
       default:
         return -1;
     }
+  }
+  else{
+    return -1;
+  }
+  if(bssid_only == 1){
+    return index;
+  }
+  else if(bssid_only == 0 && bssid == 0){
+    return index;
   }
 
   return -1;
@@ -225,7 +272,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
       printf("Recv Error: %s\n", strerror(errno));
       return -1;
     }
-    ind = parseaddr(buffer);
+    ind = parseaddr(buffer, outops->bssid_only);
     if(ind == -1){
       continue;
     }
@@ -318,7 +365,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
       printf("Recv Error: %s\n", strerror(errno));
       return -1;
     }
-    ind = parseaddr(buffer);
+    ind = parseaddr(buffer, 1);
     if(ind == -1){
       continue;
     }
@@ -360,6 +407,7 @@ int main(int argc, char *argv[]){ // Main
     {"maximum-addresses", required_argument, 0, 0},
     {"no-frame-counter", no_argument, 0, 0},
     {"no-bar-in-place", no_argument, 0, 0},
+    {"bssid-only", no_argument, 0, 0},
     {0,0,0,0}
   };
 
@@ -368,6 +416,7 @@ int main(int argc, char *argv[]){ // Main
   outops.max_addrs = 32;
   outops.no_frame_counter = 1;
   outops.no_bar_in_place = 1;
+  outops.bssid_only = 1;
   struct s_args args;
   memset(&args, 0, sizeof(args));
   args.list = 1;
@@ -392,6 +441,9 @@ int main(int argc, char *argv[]){ // Main
         }
         else if(strcmp(long_options[option_index].name, "no-bar-in-place") == 0){
           outops.no_bar_in_place = 0;
+        }
+        else if(strcmp(long_options[option_index].name, "bssid-only") == 0){
+          outops.bssid_only = 0;
         }
         continue;
       case 'l':
