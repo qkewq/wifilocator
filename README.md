@@ -60,7 +60,7 @@ Checklist
 - Parse radiotap header flags
 - Parse addr
 - Display signal strength bar
-- Add a constant ping or arping functionality
+- Add an active scan mode
 - Add some sort of name resolution
 - Rewrite parseaddr function
 - Add BSSID only scan
