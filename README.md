@@ -65,3 +65,4 @@ Checklist
 - Rewrite parseaddr function
 - Add BSSID only scan
 - Do things in the alternate terminal
+- Add signal handler for SIGINT
