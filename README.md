@@ -64,3 +64,4 @@ Checklist
 - Add some sort of name resolution
 - Rewrite parseaddr function
 - Add BSSID only scan
+- Do things in the alternate terminal
