@@ -329,6 +329,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
 }
 
 int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){
+  printf("\n0 Frames Received");
   for(int i = 0; i < 17; i++){ // Upper casing MAC addr
     if(args->targ[i] >= 97 && args->targ[i] <= 122){
       args->targ[i] = args->targ[i] - 32;
@@ -547,13 +548,17 @@ int main(int argc, char *argv[]){ // Main
 
   printf("\n");
   if(args.list == 0){ // Call list and close
+    printf("\033[?1049h");
     list(sockfd, &sock, &outops);
+    printf("\033[?1049l");
     close(sockfd);
     return 0;
   }
 
   if(args.targ_present == 0){ // Call locate and close
+    printf("\033[?1049h");
     locate(sockfd, &sock, &args, &outops);
+    printf("\033[?1049l");
     close(sockfd);
     return 0;
   }
