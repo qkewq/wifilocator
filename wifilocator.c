@@ -21,7 +21,8 @@
 
 // Note: I was very stupid when I started this, 0 is a set bit and 1 is an unset bit
 
-time_t last_sigint = time(NULL);
+time_t last_sigint = 0; // time() called in first line of main()
+
 static void sigint_handler(int signum){ // Handle ctrl C "properly"
   time_t sigint_time = time(NULL);
   if(sigint_time - last_sigint <= 3){
@@ -409,6 +410,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
 }
 
 int main(int argc, char *argv[]){ // Main
+  last_sigint = time(NULL);
   if(argc == 1){ // No arguments
     usage();
     return 0;
