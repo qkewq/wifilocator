@@ -415,7 +415,7 @@ int main(int argc, char *argv[]){ // Main
     usage();
     return 0;
   }
-  struct sigaction_sa;
+  struct sigaction_sa sa;
   sa.sa_handler = sigint_handler;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_RESTART;
