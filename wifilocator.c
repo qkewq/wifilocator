@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 #include <errno.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -11,6 +12,7 @@
 #include <linux/if_ether.h>
 #include <linux/if_packet.h>
 #include <arpa/inet.h>
+#include <signal.h>
 
 #define RED "\e[31m"
 #define YEL "\e[33m"
@@ -18,6 +20,20 @@
 #define NRM "\e[0m"
 
 // Note: I was very stupid when I started this, 0 is a set bit and 1 is an unset bit
+
+time_t last_sigint = 0; // time() called in first line of main()
+
+static void sigint_handler(int signum){ // Handle ctrl C "properly"
+  time_t sigint_time = time(NULL);
+  if(sigint_time - last_sigint <= 3){
+    write(STDOUT_FILENO, "\033[?1049l", 8);
+    _exit(0);
+  }
+  else{
+    last_sigint = sigint_time;
+    write(STDOUT_FILENO, "Press ctrl + C again to quit...\n", 32);
+  }
+}
 
 struct s_args{ // Command line arguments
   int list; // List flag set
@@ -394,10 +410,16 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
 }
 
 int main(int argc, char *argv[]){ // Main
+  last_sigint = time(NULL);
   if(argc == 1){ // No arguments
     usage();
     return 0;
   }
+  struct sigaction sa;
+  sa.sa_handler = sigint_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = SA_RESTART;
+  sigaction(SIGINT, &sa, NULL);
 
   static struct option long_options[] = { // Flags
     {"list", no_argument, 0, 'l'},
