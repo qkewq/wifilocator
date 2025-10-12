@@ -309,12 +309,14 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
     if(duplicate == -1){
       frames_recv[x] += 1;
     }
-    for(int i = 0; i < 6; i++){
-      if(x >= outops->max_addrs - 1){
-        break;
-      }
-      else{
-      addrs[x][i] = addr[i];
+    else{
+      for(int i = 0; i < 6; i++){
+        if(x >= outops->max_addrs - 1){
+          break;
+        }
+        else{
+        addrs[x][i] = addr[i];
+        }
       }
     }
     printf("\033[H");
