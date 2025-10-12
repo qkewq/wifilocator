@@ -284,6 +284,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
+    if(x >= outops->max_addrs - 1){
+      x = outops->max_addrs - 1;
+    }
     if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
       printf("Recv Error: %s\n", strerror(errno));
       return -1;
@@ -303,40 +306,28 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
         break;
       }
     }
-    if(duplicate != -1){
-      if(outops->no_frame_counter == 1){
-        printf("\033[%dF", x - duplicate);
-        printf("\033[2K");
-        printf("%d) ", duplicate + 1);
-        for(int i = 0; i < 5; i++){
-          printf("%02X:", addrs[duplicate][i]);
-        }
-        printf("%02X", addrs[duplicate][5]);
-        printf(" %d Frames Received", frames_recv[duplicate]);
-        printf("\033[%dE", x - duplicate);
-      }
-      continue;
-    }
-    else{
+    if(duplicate == -1){
       frames_recv[x] += 1;
     }
     for(int i = 0; i < 6; i++){
+      if(x >= outops->max_addrs - 1){
+        break;
+      }
+      else{
       addrs[x][i] = addr[i];
+      }
     }
-    printf("%d) ", x + 1);
-    for(int i = 0; i < 5; i++){
-      printf("%02X:", addr[i]);
-    }
-    printf("%02X", addr[5]);
-    if(outops->no_frame_counter == 1){
-      printf(" 1 Frame Received\n");
-    }
-    else{
+    for(int i = 0; i < x; i++){
+      printf("\033[2J%d) %02X:%02X:%02X:%02X:%02X:%02X",
+      i + 1, addrs[i][0], addrs[i][1], addrs[i][2],
+      addrs[i][3], addrs[i][4], addrs[i][5]);
+      if(outops->no_frame_counter == 1){
+        printf(" %d Frames Received", frames_recv[i]);
+      }
       printf("\n");
     }
     if(x == outops->max_addrs - 1){
       printf("Maximum addresses reached\n");
-      x++;
     }
     else{
       x++;
