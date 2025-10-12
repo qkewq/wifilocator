@@ -331,7 +331,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
       printf("Maximum addresses reached\n");
     }
     else{
-      x++;
+      if(duplicate == -1){
+        x++;
+      }
     }
   }
 
