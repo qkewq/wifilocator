@@ -284,7 +284,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
-    if(x >= outops->max_addrs - 1){
+    if(x > outops->max_addrs - 1){
       x = outops->max_addrs - 1;
     }
     if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
@@ -309,7 +309,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
     if(duplicate == -1){
       frames_recv[x] += 1;
       for(int i = 0; i < 6; i++){
-        if(x >= outops->max_addrs - 1){
+        if(x > outops->max_addrs - 1){
           break;
         }
         else{
