@@ -271,7 +271,7 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
 }
 
 int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List recved addrs
-  if(outops->max_addrs == 0){
+  if(outops->max_addrs <= 0){
     printf("Maximum addresses reached\n");
     return -1;
   }
@@ -299,7 +299,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
       addr[i] = buffer[ind + i];
     }
     int duplicate = -1;
-    for(int i = 0; i < x; i++){
+    for(int i = 0; i <= x; i++){
       if(memcmp(addrs[i], addr, 6) == 0){
         duplicate = i;
         frames_recv[i] += 1;
