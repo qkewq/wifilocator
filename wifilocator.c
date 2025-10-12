@@ -317,8 +317,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
       addrs[x][i] = addr[i];
       }
     }
+    printf("\033[H");
     for(int i = 0; i < x; i++){
-      printf("\033[H%d) %02X:%02X:%02X:%02X:%02X:%02X",
+      printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
       i + 1, addrs[i][0], addrs[i][1], addrs[i][2],
       addrs[i][3], addrs[i][4], addrs[i][5]);
       if(outops->no_frame_counter == 1){
