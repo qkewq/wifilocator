@@ -572,7 +572,7 @@ int main(int argc, char *argv[]){ // Main
 
   printf("\n");
   if(args.list == 0){ // Call list and close
-    printf("\033[?1049h");
+    printf("\033[?1049h\033[H");
     list(sockfd, &sock, &outops);
     printf("\033[?1049l");
     close(sockfd);
@@ -580,7 +580,7 @@ int main(int argc, char *argv[]){ // Main
   }
 
   if(args.targ_present == 0){ // Call locate and close
-    printf("\033[?1049h");
+    printf("\033[?1049h\033[H");
     locate(sockfd, &sock, &args, &outops);
     printf("\033[?1049l");
     close(sockfd);
