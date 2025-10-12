@@ -308,8 +308,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
     }
     if(duplicate == -1){
       frames_recv[x] += 1;
-    }
-    else{
       for(int i = 0; i < 6; i++){
         if(x >= outops->max_addrs - 1){
           break;
