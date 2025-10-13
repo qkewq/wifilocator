@@ -54,22 +54,6 @@ struct s_outops{ // Output options
 };
 
 int usage(){ // Usage statement
-  /*
-  printf("Tool for locating the source of a wifi signal\n");
-  printf("Usage: wifilocator [ lmh ] [ i <iface> ] [ t <mac> ]\n");
-  printf("Options:\n");
-  printf("-l, --list\t\tList detected trasmitting addresses\n");
-  printf("-i, --interface <iface>\tSpecifies the interface to use\n");
-  printf("-m, --monitor\t\tPut the interface into monitor mode\n");
-  printf("-t, --target <mac>\tThe MAC address to listen for\n");
-  printf("\t\t\tUsing -l and -t together will only do -l\n");
-  printf("-h, --help\t\tPrint this help message\n\n");
-  printf("Output Options:\n");
-  printf("--maximum-addresses <number>\tMaximum addresses in list scan\n");
-  printf("--no-frame-counter\t\tDo not output frame counters\n");
-  printf("--no-bar-in-place\tOutput dBm bars on consecutive lines\n");
-  printf("\n");
-  */
   printf("\nA tool for locating the source of a wireless signal\n"
     "or for listing detected transmitting addresses\n\n"
     "Usage: wifilocator [ OPTIONS... ]\n\n"
