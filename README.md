@@ -66,3 +66,4 @@ Checklist
 - Add BSSID only scan
 - Do things in the alternate terminal
 - Add signal handler for SIGINT
+- Add channel hopping
