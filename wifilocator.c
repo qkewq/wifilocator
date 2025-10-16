@@ -212,12 +212,14 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
   return 8 + offset;
 }
 
+/*
 int parsechannels(){ // Get channels to scan
   for(int i = 0; i < strlen(); i++){
 
   }
   return 0;
 }
+*/
 
 int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   struct winsize ws;
@@ -282,11 +284,9 @@ int list(int fd, struct sockaddr_ll *sock, struct *args, struct s_outops *outops
   int frames_recv[outops->max_addrs];
   memset(addrs, 0, sizeof(addrs));
   memset(frames_recv, 0, sizeof(frames_recv));
-  /*
   struct s_data data[outops->max_addrs] = {
     {.empty = 1},
   };
-  */
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
