@@ -63,6 +63,13 @@ struct s_data{
   uint8_t empty;
 };
 
+const uint8_t channel_nums[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,32,36,40,44,48,52,56,60,64,68,
+  72,76,80,84,88,92,96,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165,169,173,177};
+
+const uint16_t channel_freq[] = {2412,2417,2422,2427,2432,2437,2442,2447,2452,2457,2462,2467,2472,
+  2484,5160,5180,5200,5220,5240,5260,5280,5300,5320,5340,5360,5380,5400,5420,5440,5460,5480,5500,
+  5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5720,5745,5765,5785,5805,5825,5845,5865,5885};
+
 int usage(){ // Usage statement
   printf("\nA tool for locating the source of a wireless signal\n"
     "or for listing detected transmitting addresses\n\n"
@@ -229,7 +236,6 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   return 8 + offset;
 }
 
-
 int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   struct winsize ws;
   if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){ // Get window size
@@ -300,6 +306,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
     uint16_t freq = 0;
+    uint8_t channel = 0;
     if(x > outops->max_addrs - 1){
       x = outops->max_addrs - 1;
     }
@@ -319,6 +326,12 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       continue;
     }
     freq = (buffer[channel_index + 1] * 0x10) + buffer[channel_index];
+    for(int i = 0; i < 51; i++){
+      if(channel_freq[i] == freq){
+        channel = channel_nums[i];
+        break;
+      }
+    }
     int duplicate = -1;
     for(int i = 0; i <= x; i++){
       if(memcmp(addrs[i], addr, 6) == 0){
@@ -344,7 +357,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       i + 1, addrs[i][0], addrs[i][1], addrs[i][2],
       addrs[i][3], addrs[i][4], addrs[i][5]);
       if(outops->no_frame_counter == 1){
-        printf(" %d Frames Received %d", frames_recv[i], channel_index);
+        printf(" %d Frames Received | Channel %d", frames_recv[i], channel);
       }
       printf("\n");
     }
