@@ -26,7 +26,7 @@ time_t last_sigint = 0; // time() called in first line of main()
 static void sigint_handler(int signum){ // Handle ctrl C "properly"
   time_t sigint_time = time(NULL);
   if(sigint_time - last_sigint <= 3){
-    write(STDOUT_FILENO, "\033[?1049l", 8);
+    write(STDOUT_FILENO, "\033[0m\033[?1049l", 12);
     _exit(0);
   }
   else{
@@ -42,8 +42,10 @@ struct s_args{ // Command line arguments
   int help; // Help flag set
   int targ_present; // Target flag set
   int ifc_present; // Interface flag set
+  int channel_present;
   char targ[18]; // Target addr
   char ifc[IFNAMSIZ]; // Interface name
+  char channel[255];
 };
 
 struct s_outops{ // Output options
@@ -53,23 +55,22 @@ struct s_outops{ // Output options
   int bssid_only;
 };
 
+struct s_data{
+  uint8_t addr[6];
+  int frames_recv;
+  uint8_t channel;
+  time_t last_frame;
+  uint8_t empty;
+};
+
+const uint8_t channel_nums[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,32,36,40,44,48,52,56,60,64,68,
+  72,76,80,84,88,92,96,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165,169,173,177};
+
+const uint16_t channel_freq[] = {2412,2417,2422,2427,2432,2437,2442,2447,2452,2457,2462,2467,2472,
+  2484,5160,5180,5200,5220,5240,5260,5280,5300,5320,5340,5360,5380,5400,5420,5440,5460,5480,5500,
+  5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5720,5745,5765,5785,5805,5825,5845,5865,5885};
+
 int usage(){ // Usage statement
-  /*
-  printf("Tool for locating the source of a wifi signal\n");
-  printf("Usage: wifilocator [ lmh ] [ i <iface> ] [ t <mac> ]\n");
-  printf("Options:\n");
-  printf("-l, --list\t\tList detected trasmitting addresses\n");
-  printf("-i, --interface <iface>\tSpecifies the interface to use\n");
-  printf("-m, --monitor\t\tPut the interface into monitor mode\n");
-  printf("-t, --target <mac>\tThe MAC address to listen for\n");
-  printf("\t\t\tUsing -l and -t together will only do -l\n");
-  printf("-h, --help\t\tPrint this help message\n\n");
-  printf("Output Options:\n");
-  printf("--maximum-addresses <number>\tMaximum addresses in list scan\n");
-  printf("--no-frame-counter\t\tDo not output frame counters\n");
-  printf("--no-bar-in-place\tOutput dBm bars on consecutive lines\n");
-  printf("\n");
-  */
   printf("\nA tool for locating the source of a wireless signal\n"
     "or for listing detected transmitting addresses\n\n"
     "Usage: wifilocator [ OPTIONS... ]\n\n"
@@ -197,23 +198,40 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
 int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
   // Checking for flags and adjusting the offset
   int offset = 0;
-  if((buffer[4] & 0x32) == 0x00){
+  if((buffer[4] & 0x20) == 0x00){ // Signal Present
     return -1;
   }
-  if((buffer[4] & 0x01) == 0x01){
+  if((buffer[4] & 0x01) == 0x01){ // TSFT
     offset += 8;
   }
-  if((buffer[4] & 0x02) == 0x02){
+  if((buffer[4] & 0x02) == 0x02){ // Flags
     offset += 1;
   }
-  if((buffer[4] & 0x04) == 0x04){
+  if((buffer[4] & 0x04) == 0x04){ // Rate
     offset += 1;
   }
-  if((buffer[4] & 0x08) == 0x08){
+  if((buffer[4] & 0x08) == 0x08){ // Channel
     offset += 4;
   }
-  if((buffer[4] & 0x16) == 0x16){
+  if((buffer[4] & 0x16) == 0x10){ // FHSS
     offset += 2;
+  }
+  return 8 + offset;
+}
+
+int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
+  int offset = 0;
+  if((buffer[4] & 0x08) == 0x00){ // Channel Present
+    return -1;
+  }
+  if((buffer[4] & 0x01) == 0x01){ // TSFT
+    offset += 8;
+  }
+  if((buffer[4] & 0x02) == 0x02){ // Flags
+    offset += 1;
+  }
+  if((buffer[4] & 0x04) == 0x04){ // Rate
+    offset += 1;
   }
   return 8 + offset;
 }
@@ -270,77 +288,83 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   return 0;
 }
 
-int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List recved addrs
-  if(outops->max_addrs == 0){
+int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // List recved addrs
+  if(outops->max_addrs <= 0){
     printf("Maximum addresses reached\n");
     return -1;
   }
-  int ind = 0;
-  int x = 0;
-  uint8_t addrs[outops->max_addrs][6];
-  int frames_recv[outops->max_addrs];
-  memset(addrs, 0, sizeof(addrs));
-  memset(frames_recv, 0, sizeof(frames_recv));
+  struct s_data data[outops->max_addrs] = {};
+  for(int i = 0; i < outops->max_addrs; i++){
+    data[i].empty = 1;
+  }
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
+    uint16_t freq = 0;
     if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
       printf("Recv Error: %s\n", strerror(errno));
       return -1;
     }
-    ind = parseaddr(buffer, outops->bssid_only);
+    int ind = parseaddr(buffer, outops->bssid_only);
     if(ind == -1){
       continue;
     }
     for(int i = 0; i < 6; i++){
       addr[i] = buffer[ind + i];
     }
+    int channel_index = parsechannel(buffer);
+    if(channel_index == -1){
+      continue;
+    }
+    freq = (buffer[channel_index + 1] * 0x100) + buffer[channel_index];
+    uint8_t channel = 0;
+    for(int i = 0; i < 51; i++){
+      if(channel_freq[i] == freq){
+        channel = channel_nums[i];
+        break;
+      }
+    }
     int duplicate = -1;
-    for(int i = 0; i < x; i++){
-      if(memcmp(addrs[i], addr, 6) == 0){
+    for(int i = 0; i < outops->max_addrs; i++){
+      if(memcmp(data[i].addr, addr, 6) == 0){
         duplicate = i;
-        frames_recv[i] += 1;
         break;
       }
     }
     if(duplicate != -1){
-      if(outops->no_frame_counter == 1){
-        printf("\033[%dF", x - duplicate);
-        printf("\033[2K");
-        printf("%d) ", duplicate + 1);
-        for(int i = 0; i < 5; i++){
-          printf("%02X:", addrs[duplicate][i]);
+      data[duplicate].frames_recv += 1;
+      data[duplicate].last_frame = time(NULL);
+      data[duplicate].channel = channel;
+      data[duplicate].empty = 0;
+    }
+    else{
+      for(int i = 0; i < outops->max_addrs; i++){
+        if(data[i].empty == 1){
+          memcpy(data[i].addr, addr, 6);
+          data[i].frames_recv = 1;
+          data[i].last_frame = time(NULL);
+          data[i].channel = channel;
+          data[i].empty = 0;
+          break;
         }
-        printf("%02X", addrs[duplicate][5]);
-        printf(" %d Frames Received", frames_recv[duplicate]);
-        printf("\033[%dE", x - duplicate);
       }
-      continue;
     }
-    else{
-      frames_recv[x] += 1;
-    }
-    for(int i = 0; i < 6; i++){
-      addrs[x][i] = addr[i];
-    }
-    printf("%d) ", x + 1);
-    for(int i = 0; i < 5; i++){
-      printf("%02X:", addr[i]);
-    }
-    printf("%02X", addr[5]);
-    if(outops->no_frame_counter == 1){
-      printf(" 1 Frame Received\n");
-    }
-    else{
-      printf("\n");
-    }
-    x++;
-    if(x == outops->max_addrs){
-      printf("Maximum addresses reached\n");
-      return -1;
+    printf("\033[H");
+    int inc = 1;
+    for(int i = 0; i < outops->max_addrs; i++){
+      if(data[i].empty == 0){
+        printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
+        inc, data[i].addr[0], data[i].addr[1],
+        data[i].addr[2], data[i].addr[3], data[i].addr[4],
+        data[i].addr[5]);
+        if(outops->no_frame_counter == 1){
+          printf(" %d Frames Received", data[i].frames_recv);
+        }
+        printf(" Channel %d\n", data[i].channel);
+        inc += 1;
+      }
     }
   }
-
   return 0;
 }
 
@@ -426,6 +450,7 @@ int main(int argc, char *argv[]){ // Main
     {"interface", required_argument, 0, 'i'},
     {"monitor", no_argument, 0, 'm'},
     {"target", required_argument, 0, 't'},
+    {"channel", required_argument, 0, 'c'},
     {"help", no_argument, 0, 'h'},
     {"maximum-addresses", required_argument, 0, 0},
     {"no-frame-counter", no_argument, 0, 0},
@@ -447,6 +472,7 @@ int main(int argc, char *argv[]){ // Main
   args.help = 1;
   args.ifc_present = 1;
   args.targ_present = 1;
+  args.channel_present = 1;
   int option;
   while(1 == 1){ // Get flags and options
     int option_index = 0;
@@ -482,6 +508,10 @@ int main(int argc, char *argv[]){ // Main
       case 't':
         strncpy(args.targ, optarg, strlen(optarg));
         args.targ_present = 0;
+        continue;
+      case 'c':
+        strncpy(args.channel, optarg, strlen(optarg));
+        args.channel_present = 0;
         continue;
       case 'h':
         args.help = 0;
@@ -570,17 +600,17 @@ int main(int argc, char *argv[]){ // Main
 
   printf("\n");
   if(args.list == 0){ // Call list and close
-    printf("\033[?1049h");
-    list(sockfd, &sock, &outops);
-    printf("\033[?1049l");
+    printf("\033[?1049h\033[H");
+    list(sockfd, &sock, &args, &outops);
+    printf("\033[0m\033[?1049l");
     close(sockfd);
     return 0;
   }
 
   if(args.targ_present == 0){ // Call locate and close
-    printf("\033[?1049h");
+    printf("\033[?1049h\033[H");
     locate(sockfd, &sock, &args, &outops);
-    printf("\033[?1049l");
+    printf("\033[0m\033[?1049l");
     close(sockfd);
     return 0;
   }
