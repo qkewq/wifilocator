@@ -214,16 +214,16 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
 
 int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   int offset = 0;
-  if(buffer[4] & 0x08 == 0x00){ // Channel Present
+  if((buffer[4] & 0x08) == 0x00){ // Channel Present
     return -1;
   }
-  if(buffer[4] & 0x01 == 0x01){ // TSFT
+  if((buffer[4] & 0x01) == 0x01){ // TSFT
     offset += 8;
   }
-  if(buffer[4] & 0x02 == 0x02){ // Flags
+  if((buffer[4] & 0x02) == 0x02){ // Flags
     offset += 1;
   }
-  if(buffer[4] & 0x04 == 0x04){ // Rate
+  if((buffer[4] & 0x04) == 0x04){ // Rate
     offset += 1;
   }
   return 8 + offset;
