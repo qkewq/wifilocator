@@ -284,9 +284,10 @@ int list(int fd, struct sockaddr_ll *sock, struct *args, struct s_outops *outops
   int frames_recv[outops->max_addrs];
   memset(addrs, 0, sizeof(addrs));
   memset(frames_recv, 0, sizeof(frames_recv));
-  struct s_data data[outops->max_addrs] = {
-    {.empty = 1},
-  };
+  struct s_data data[outops->max_addrs] = {};
+  for(int i = 0; i < outops->max_addrs; i++){
+    data[i].empty = 1;
+  }
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
@@ -579,7 +580,7 @@ int main(int argc, char *argv[]){ // Main
   printf("\n");
   if(args.list == 0){ // Call list and close
     printf("\033[?1049h\033[H");
-    list(sockfd, &sock, &args &outops);
+    list(sockfd, &sock, &args, &outops);
     printf("\033[0m\033[?1049l");
     close(sockfd);
     return 0;
