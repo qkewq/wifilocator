@@ -58,7 +58,7 @@ struct s_outops{ // Output options
 struct s_data{
   uint8_t addr[6];
   int frames_recv;
-  int channel;
+  uint8_t channel;
   time_t last_frame;
   uint8_t empty;
 };
@@ -306,7 +306,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
     uint16_t freq = 0;
-    uint8_t channel = 0;
     if(x > outops->max_addrs - 1){
       x = outops->max_addrs - 1;
     }
@@ -326,12 +325,55 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       continue;
     }
     freq = (buffer[channel_index + 1] * 0x100) + buffer[channel_index];
+    uint8_t channel = 0;
     for(int i = 0; i < 51; i++){
       if(channel_freq[i] == freq){
         channel = channel_nums[i];
         break;
       }
     }
+    int duplicate = -1;
+    for(int i = 0; i < outops->max_addrs; i++){
+      if(memcmp(data[i].addr, addr, 6) == 0){
+        duplicate = i;
+        break;
+      }
+    }
+    if(duplicate != -1){
+      data[duplicate].frames_recv += 1;
+      data[duplicate].last_frame = time(NULL);
+      data[duplicate].channel = channel;
+      data[duplicate].empty = 0;
+      break;
+    }
+    else{
+      for(int i = 0; i < outops->max_addrs; i++){
+        if(data[i].empty == 1){
+          memcpy(data[i].addr, addr, 6);
+          data[i].frames_recv = 1;
+          data[i].last_frame = time(NULL);
+          data[i].channel = channel;
+          data[i].empty = 0;
+          break;
+        }
+      }
+    }
+    printf("\033[H");
+    int inc = 1;
+    for(int i = 0; i < outops->max_addrs; i++){
+      if(data[i].empty == 0){
+        printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
+        inc, data[i].addr[0], data[i].addr[1],
+        data[i].addr[2], data[i].addr[3], data[i].addr[4]
+        data[i].addr[5]);
+        if(outops->no_frame_counter == 1){
+          printf(" %d Frames Received", data[i].frames_recv);
+        }
+        printf(" Channel %d\n", data[i].channel);
+        inc += 1;
+      }
+    }
+    /*
     int duplicate = -1;
     for(int i = 0; i <= x; i++){
       if(memcmp(addrs[i], addr, 6) == 0){
@@ -370,7 +412,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       }
     }
   }
-
+*/
   return 0;
 }
 
