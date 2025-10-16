@@ -344,7 +344,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       i + 1, addrs[i][0], addrs[i][1], addrs[i][2],
       addrs[i][3], addrs[i][4], addrs[i][5]);
       if(outops->no_frame_counter == 1){
-        printf(" %d Frames Received FREQ: %d", frames_recv[i], freq);
+        printf(" %d Frames Received %02X%02X", frames_recv[i], buffer[channel_index + 1], buffer[channel_index]);
       }
       printf("\n");
     }
