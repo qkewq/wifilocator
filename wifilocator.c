@@ -293,11 +293,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     printf("Maximum addresses reached\n");
     return -1;
   }
-  int x = 0;
-  uint8_t addrs[outops->max_addrs][6];
-  int frames_recv[outops->max_addrs];
-  memset(addrs, 0, sizeof(addrs));
-  memset(frames_recv, 0, sizeof(frames_recv));
   struct s_data data[outops->max_addrs] = {};
   for(int i = 0; i < outops->max_addrs; i++){
     data[i].empty = 1;
@@ -306,9 +301,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
     uint16_t freq = 0;
-    if(x > outops->max_addrs - 1){
-      x = outops->max_addrs - 1;
-    }
     if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
       printf("Recv Error: %s\n", strerror(errno));
       return -1;
