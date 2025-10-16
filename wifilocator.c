@@ -373,45 +373,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         inc += 1;
       }
     }
-    /*
-    int duplicate = -1;
-    for(int i = 0; i <= x; i++){
-      if(memcmp(addrs[i], addr, 6) == 0){
-        duplicate = i;
-        frames_recv[i] += 1;
-        break;
-      }
-    }
-    if(duplicate == -1){
-      frames_recv[x] += 1;
-      for(int i = 0; i < 6; i++){
-        if(x > outops->max_addrs - 1){
-          break;
-        }
-        else{
-        addrs[x][i] = addr[i];
-        }
-      }
-    }
-    printf("\033[H");
-    for(int i = 0; i < x; i++){
-      printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
-      i + 1, addrs[i][0], addrs[i][1], addrs[i][2],
-      addrs[i][3], addrs[i][4], addrs[i][5]);
-      if(outops->no_frame_counter == 1){
-        printf(" %d Frames Received | Channel %d", frames_recv[i], channel);
-      }
-      printf("\n");
-    }
-    if(x == outops->max_addrs - 1){
-      printf("Maximum addresses reached\n");
-    }
-    else{
-      if(duplicate == -1){
-        x++;
-      }
-    }
-*/
   }
   return 0;
 }
