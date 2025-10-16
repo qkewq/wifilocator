@@ -191,35 +191,44 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
 int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
   // Checking for flags and adjusting the offset
   int offset = 0;
-  if((buffer[4] & 0x32) == 0x00){
+  if((buffer[4] & 0x20) == 0x00){ // Signal Present
     return -1;
   }
-  if((buffer[4] & 0x01) == 0x01){
+  if((buffer[4] & 0x01) == 0x01){ // TSFT
     offset += 8;
   }
-  if((buffer[4] & 0x02) == 0x02){
+  if((buffer[4] & 0x02) == 0x02){ // Flags
     offset += 1;
   }
-  if((buffer[4] & 0x04) == 0x04){
+  if((buffer[4] & 0x04) == 0x04){ // Rate
     offset += 1;
   }
-  if((buffer[4] & 0x08) == 0x08){
+  if((buffer[4] & 0x08) == 0x08){ // Channel
     offset += 4;
   }
-  if((buffer[4] & 0x16) == 0x16){
+  if((buffer[4] & 0x16) == 0x10){ // FHSS
     offset += 2;
   }
   return 8 + offset;
 }
 
-/*
-int parsechannels(){ // Get channels to scan
-  for(int i = 0; i < strlen(); i++){
-
+int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
+  int offset = 0;
+  if(buffer[4] & 0x08 == 0x00){ // Channel Present
+    return -1;
   }
-  return 0;
+  if(buffer[4] & 0x01 == 0x01){ // TSFT
+    offset += 8;
+  }
+  if(buffer[4] & 0x02 == 0x02){ // Flags
+    offset += 1;
+  }
+  if(buffer[4] & 0x04 == 0x04){ // Rate
+    offset += 1;
+  }
+  return 8 + offset;
 }
-*/
+
 
 int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   struct winsize ws;
@@ -278,7 +287,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     printf("Maximum addresses reached\n");
     return -1;
   }
-  int ind = 0;
   int x = 0;
   uint8_t addrs[outops->max_addrs][6];
   int frames_recv[outops->max_addrs];
@@ -291,6 +299,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
+    uint16_t freq = 0;
     if(x > outops->max_addrs - 1){
       x = outops->max_addrs - 1;
     }
@@ -298,13 +307,18 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       printf("Recv Error: %s\n", strerror(errno));
       return -1;
     }
-    ind = parseaddr(buffer, outops->bssid_only);
+    int ind = parseaddr(buffer, outops->bssid_only);
     if(ind == -1){
       continue;
     }
     for(int i = 0; i < 6; i++){
       addr[i] = buffer[ind + i];
     }
+    int channel_index = parsechannel(buffer);
+    if(channel_index == -1){
+      continue;
+    }
+    freq = (buffer[channel_index + 1] * 0x10) + buffer[channel_index];
     int duplicate = -1;
     for(int i = 0; i <= x; i++){
       if(memcmp(addrs[i], addr, 6) == 0){
@@ -330,7 +344,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       i + 1, addrs[i][0], addrs[i][1], addrs[i][2],
       addrs[i][3], addrs[i][4], addrs[i][5]);
       if(outops->no_frame_counter == 1){
-        printf(" %d Frames Received", frames_recv[i]);
+        printf(" %d Frames Received FREQ: %d", frames_recv[i], freq);
       }
       printf("\n");
     }
