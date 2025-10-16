@@ -26,7 +26,7 @@ time_t last_sigint = 0; // time() called in first line of main()
 static void sigint_handler(int signum){ // Handle ctrl C "properly"
   time_t sigint_time = time(NULL);
   if(sigint_time - last_sigint <= 3){
-    write(STDOUT_FILENO, "\033[?1049l", 8);
+    write(STDOUT_FILENO, "\033[0m\033[?1049l", 12);
     _exit(0);
   }
   else{
@@ -42,8 +42,10 @@ struct s_args{ // Command line arguments
   int help; // Help flag set
   int targ_present; // Target flag set
   int ifc_present; // Interface flag set
+  int channel_present;
   char targ[18]; // Target addr
   char ifc[IFNAMSIZ]; // Interface name
+  char channel[255];
 };
 
 struct s_outops{ // Output options
@@ -51,6 +53,14 @@ struct s_outops{ // Output options
   int no_frame_counter;
   int no_bar_in_place;
   int bssid_only;
+};
+
+struct s_data{
+  uint8_t addr[6];
+  int frames_recv;
+  int channel;
+  time_t last_frame;
+  uint8_t empty;
 };
 
 int usage(){ // Usage statement
@@ -202,6 +212,13 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
   return 8 + offset;
 }
 
+int parsechannels(){ // Get channels to scan
+  for(int i = 0; i < strlen(); i++){
+
+  }
+  return 0;
+}
+
 int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   struct winsize ws;
   if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){ // Get window size
@@ -254,7 +271,7 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   return 0;
 }
 
-int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List recved addrs
+int list(int fd, struct sockaddr_ll *sock, struct *args, struct s_outops *outops){ // List recved addrs
   if(outops->max_addrs <= 0){
     printf("Maximum addresses reached\n");
     return -1;
@@ -265,6 +282,11 @@ int list(int fd, struct sockaddr_ll *sock, struct s_outops *outops){ // List rec
   int frames_recv[outops->max_addrs];
   memset(addrs, 0, sizeof(addrs));
   memset(frames_recv, 0, sizeof(frames_recv));
+  /*
+  struct s_data data[outops->max_addrs] = {
+    {.empty = 1},
+  };
+  */
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
@@ -406,6 +428,7 @@ int main(int argc, char *argv[]){ // Main
     {"interface", required_argument, 0, 'i'},
     {"monitor", no_argument, 0, 'm'},
     {"target", required_argument, 0, 't'},
+    {"channel", required_argument, 0, 'c'},
     {"help", no_argument, 0, 'h'},
     {"maximum-addresses", required_argument, 0, 0},
     {"no-frame-counter", no_argument, 0, 0},
@@ -427,6 +450,7 @@ int main(int argc, char *argv[]){ // Main
   args.help = 1;
   args.ifc_present = 1;
   args.targ_present = 1;
+  args.channel_present = 1;
   int option;
   while(1 == 1){ // Get flags and options
     int option_index = 0;
@@ -462,6 +486,10 @@ int main(int argc, char *argv[]){ // Main
       case 't':
         strncpy(args.targ, optarg, strlen(optarg));
         args.targ_present = 0;
+        continue;
+      case 'c':
+        strncpy(args.channel, optarg, strlen(optarg));
+        args.channel_present = 0;
         continue;
       case 'h':
         args.help = 0;
@@ -551,8 +579,8 @@ int main(int argc, char *argv[]){ // Main
   printf("\n");
   if(args.list == 0){ // Call list and close
     printf("\033[?1049h\033[H");
-    list(sockfd, &sock, &outops);
-    printf("\033[?1049l");
+    list(sockfd, &sock, &args &outops);
+    printf("\033[0m\033[?1049l");
     close(sockfd);
     return 0;
   }
@@ -560,7 +588,7 @@ int main(int argc, char *argv[]){ // Main
   if(args.targ_present == 0){ // Call locate and close
     printf("\033[?1049h\033[H");
     locate(sockfd, &sock, &args, &outops);
-    printf("\033[?1049l");
+    printf("\033[0m\033[?1049l");
     close(sockfd);
     return 0;
   }
