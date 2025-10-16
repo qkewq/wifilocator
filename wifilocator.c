@@ -273,7 +273,7 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   return 0;
 }
 
-int list(int fd, struct sockaddr_ll *sock, struct *args, struct s_outops *outops){ // List recved addrs
+int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // List recved addrs
   if(outops->max_addrs <= 0){
     printf("Maximum addresses reached\n");
     return -1;
