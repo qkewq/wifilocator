@@ -67,3 +67,4 @@ Checklist
 - Do things in the alternate terminal
 - Add signal handler for SIGINT
 - Add channel hopping
+- Add age out

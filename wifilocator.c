@@ -55,7 +55,7 @@ struct s_outops{ // Output options
   int bssid_only;
 };
 
-struct s_data{
+struct s_data{ // Struct for addr data
   uint8_t addr[6];
   int frames_recv;
   uint8_t channel;
@@ -368,7 +368,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   return 0;
 }
 
-int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){
+int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // Display dBm of tx
   printf("\n0 Frames Received");
   for(int i = 0; i < 17; i++){ // Upper casing MAC addr
     if(args->targ[i] >= 97 && args->targ[i] <= 122){
