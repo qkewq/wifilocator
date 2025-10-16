@@ -336,7 +336,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       data[duplicate].last_frame = time(NULL);
       data[duplicate].channel = channel;
       data[duplicate].empty = 0;
-      break;
     }
     else{
       for(int i = 0; i < outops->max_addrs; i++){
