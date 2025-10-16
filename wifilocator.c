@@ -325,7 +325,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     if(channel_index == -1){
       continue;
     }
-    freq = (buffer[channel_index + 1] * 0x10) + buffer[channel_index];
+    freq = (buffer[channel_index + 1] * 0x100) + buffer[channel_index];
     for(int i = 0; i < 51; i++){
       if(channel_freq[i] == freq){
         channel = channel_nums[i];
