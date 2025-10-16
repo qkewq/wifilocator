@@ -364,7 +364,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       if(data[i].empty == 0){
         printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
         inc, data[i].addr[0], data[i].addr[1],
-        data[i].addr[2], data[i].addr[3], data[i].addr[4]
+        data[i].addr[2], data[i].addr[3], data[i].addr[4],
         data[i].addr[5]);
         if(outops->no_frame_counter == 1){
           printf(" %d Frames Received", data[i].frames_recv);
@@ -411,8 +411,8 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         x++;
       }
     }
-  }
 */
+  }
   return 0;
 }
 
