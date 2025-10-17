@@ -42,16 +42,17 @@ struct s_args{ // Command line arguments
   int help; // Help flag set
   int targ_present; // Target flag set
   int ifc_present; // Interface flag set
-  int channel_present;
+  int channel; // Specify channel
   char targ[18]; // Target addr
   char ifc[IFNAMSIZ]; // Interface name
-  char channel[255];
 };
 
 struct s_outops{ // Output options
   int max_addrs; // Maximum addresses to print
   int no_frame_counter; // Do not display frame counter
+  int no_channel; // Do not display channel
   int no_bar_in_place; // Do not keep dBm bar on one line
+  int no_aging; // Do not age out addrs
   int bssid_only; // Only scan for BSSIDs
 };
 
@@ -71,30 +72,33 @@ const uint16_t channel_freq[] = {2412,2417,2422,2427,2432,2437,2442,2447,2452,24
   5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5720,5745,5765,5785,5805,5825,5845,5865,5885};
 
 int usage(){ // Usage statement
-  printf("\nA tool for locating the source of a wireless signal\n"
-    "or for listing detected transmitting addresses\n\n"
-    "Usage: wifilocator [ OPTIONS... ]\n\n"
-    "Options:\n"
-    "-l, --list\t\t\tList detected transmitting addresses\n"
-    "-i, --interface <interface>\tSpecifies the interface to use\n"
-    "-m, --monitor\t\t\tPut the interface into monitor mode\n"
-    "-t, --target <mac address>\tThe MAC address to listen for\n"
-    "-h, --help\t\t\tDisplay this help message\n\n"
-    "Output options:\n"
-    "--bssid-only\t\t\tOnly scan for access points\n"
-    "--maximum-addresses <num>\tThe maximum number of addresses "
-    "to be\n\t\t\t\tlisted by the --list option, defaul 32\n"
-    "--no-frame-counter\t\tDo not output frame counters\n"
-    "--no-bar-in-place\t\tOutput dBm bar on consecutive lines\n\n"
-    "Notes:\n"
-    "The interface must be in monitor mode to operate\n"
-    "If --list and --target are used together, "
-    "--target will be ignored\nThe MAC address should be six groups "
-    "of seperated hex digits, any case\n\n"
-    "Examples:\n"
-    "wifilocator -i wlan0 -m -i\n"
-    "wifilocator -i wlan0 -t xx:xx:xx:xx:xx:xx\n"
-    "wifilocator --interface --list --no-frame-counter\n\n");
+printf("\nA tool for locating the source of a wireless signal\n"
+  "or for listing detected transmitting addresses\n\n"
+  "Usage: wifilocator [ OPTIONS... ]\n\n"
+  "Options:\n"
+  "-l, --list\t\t\tList detected transmitting addresses\n"
+  "-i, --interface <interface>\tSpecifies the interface to use\n"
+  "-m, --monitor\t\t\tPut the interface into monitor mode\n"
+  "-t, --target <mac address>\tThe MAC address to listen for\n"
+  "-c, --channel <channel>\t\tSpecifies the channel to use\n"
+  "-h, --help\t\t\tDisplay this help message\n\n"
+  "Output options:\n"
+  "--bssid-only\t\t\tOnly scan for access points\n"
+  "--maximum-addresses <num>\tThe maximum number of addresses" 
+  "to be\n\t\t\t\tlisted by the --list option, defaul 32\n"
+  "--no-frame-counter\t\tDo not output frame counters\n"
+  "--no-bar-in-place\t\tOutput dBm bar on consecutive lines\n"
+  "--no-aging\t\t\tDo not age out addresses\n"
+  "--no-channel\t\t\tDo not display channel\n\n"
+  "Notes:\n"
+  "The interface must be in monitor mode to operate\n"
+  "If --list and --target are used together, "
+  "--target will be ignored\nThe MAC address should be six groups "
+  "of seperated hex digits, any case\n\n"
+  "Examples:\n"
+  "wifilocator -i wlan0 -m -i\n"
+  "wifilocator -i wlan0 -t xx:xx:xx:xx:xx:xx\n"
+  "wifilocator --interface --list --no-frame-counter\n\n");
 
   return 0;
 }
@@ -360,33 +364,37 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         if(outops->no_frame_counter == 1){
           printf(" %d Frames Received", data[i].frames_recv);
         }
-        printf(" Channel %d\n", data[i].channel);
+        if(outops->no_channel == 1){
+          printf(" Channel %d\n", data[i].channel);
+        }
         inc += 1;
       }
     }
-    time_t current_time = time(NULL);
-    for(int i = 0; i < outops->max_addrs; i++){ // Aging out of addresses
-      if(data[i].empty == 0){
-        if(current_time - data[i].last_frame <= 5){
-          continue;
-        }
-        else{
-          if(data[i].frames_recv <= 5){
-            data[i].empty = 1;
-          }
-          else if(data[i].frames_recv <= 100){
-            if(current_time - data[i].last_frame >= 30){
-              data[i].empty = 1;
-            }
-          }
-          else if(data[i].frames_recv <= 1000){
-            if(current_time - data[i].last_frame >= 60){
-              data[i].empty = 1;
-            }
+    if(outops->no_aging == 1){
+      time_t current_time = time(NULL);
+      for(int i = 0; i < outops->max_addrs; i++){ // Aging out of addresses
+        if(data[i].empty == 0){
+          if(current_time - data[i].last_frame <= 5){
+            continue;
           }
           else{
-            if(current_time - data[i].last_frame >= 180){
+            if(data[i].frames_recv <= 5){
               data[i].empty = 1;
+            }
+            else if(data[i].frames_recv <= 100){
+              if(current_time - data[i].last_frame >= 30){
+                data[i].empty = 1;
+              }
+            }
+            else if(data[i].frames_recv <= 1000){
+              if(current_time - data[i].last_frame >= 60){
+                data[i].empty = 1;
+              }
+            }
+            else{
+              if(current_time - data[i].last_frame >= 180){
+                data[i].empty = 1;
+              }
             }
           }
         }
@@ -482,7 +490,9 @@ int main(int argc, char *argv[]){ // Main
     {"help", no_argument, 0, 'h'},
     {"maximum-addresses", required_argument, 0, 0},
     {"no-frame-counter", no_argument, 0, 0},
+    {"no-channel", no_argument,0, 0},
     {"no-bar-in-place", no_argument, 0, 0},
+    {"no-aging", no_argument, 0, 0},
     {"bssid-only", no_argument, 0, 0},
     {0,0,0,0}
   };
@@ -491,7 +501,9 @@ int main(int argc, char *argv[]){ // Main
   memset(&outops, 0, sizeof(outops));
   outops.max_addrs = 32;
   outops.no_frame_counter = 1;
+  outops.no_channel = 1;
   outops.no_bar_in_place = 1;
+  outops.no_aging = 1;
   outops.bssid_only = 1;
   struct s_args args; // Initialize args with default values
   memset(&args, 0, sizeof(args));
@@ -500,7 +512,7 @@ int main(int argc, char *argv[]){ // Main
   args.help = 1;
   args.ifc_present = 1;
   args.targ_present = 1;
-  args.channel_present = 1;
+  args.channel = -1;
   int option;
   while(1 == 1){ // Get flags and options
     int option_index = 0;
@@ -516,8 +528,14 @@ int main(int argc, char *argv[]){ // Main
         else if(strcmp(long_options[option_index].name, "no-frame-counter") == 0){
           outops.no_frame_counter = 0;
         }
+        else if(strcmp(long_options[option_index].name, "no-channel") == 0){
+          outops.no_channel = 0;
+        }
         else if(strcmp(long_options[option_index].name, "no-bar-in-place") == 0){
           outops.no_bar_in_place = 0;
+        }
+        else if(strcmp(long_options[option_index].name, "no-aging") == 0){
+          outops.no_aging = 0;
         }
         else if(strcmp(long_options[option_index].name, "bssid-only") == 0){
           outops.bssid_only = 0;
@@ -539,7 +557,7 @@ int main(int argc, char *argv[]){ // Main
         continue;
       case 'c':
         strncpy(args.channel, optarg, strlen(optarg));
-        args.channel_present = 0;
+        args.channel = atoi(optarg);
         continue;
       case 'h':
         args.help = 0;
