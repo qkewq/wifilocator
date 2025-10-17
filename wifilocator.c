@@ -518,7 +518,7 @@ int main(int argc, char *argv[]){ // Main
   int option;
   while(1 == 1){ // Get flags and options
     int option_index = 0;
-    option = getopt_long(argc, argv, "li:mt:h", long_options, &option_index);
+    option = getopt_long(argc, argv, "li:mt:c:h", long_options, &option_index);
     if(option == -1){
       break;
     }
