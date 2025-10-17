@@ -556,7 +556,6 @@ int main(int argc, char *argv[]){ // Main
         args.targ_present = 0;
         continue;
       case 'c':
-        strncpy(args.channel, optarg, strlen(optarg));
         args.channel = atoi(optarg);
         continue;
       case 'h':
