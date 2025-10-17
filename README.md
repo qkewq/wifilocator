@@ -3,6 +3,7 @@ Locate wifi device or access point based on received signal strength
 Works off of radiotap headers added by the antenna's drivers  
 The antenna must support monitor mode  
 Must have the dbm Antenna Signal flag set in the radiotap header  
+Even with the channel flag set, some drivers will still channel hop automatically  
 
 <br>
 
