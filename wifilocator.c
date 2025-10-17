@@ -353,23 +353,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         }
       }
     }
-    printf("\033[H"); // Move cursor home
-    int inc = 1;
-    for(int i = 0; i < outops->max_addrs; i++){ // Print everything
-      if(data[i].empty == 0){
-        printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
-        inc, data[i].addr[0], data[i].addr[1],
-        data[i].addr[2], data[i].addr[3], data[i].addr[4],
-        data[i].addr[5]);
-        if(outops->no_frame_counter == 1){
-          printf(" %d Frames Received", data[i].frames_recv);
-        }
-        if(outops->no_channel == 1){
-          printf(" Channel %d\n", data[i].channel);
-        }
-        inc += 1;
-      }
-    }
     if(outops->no_aging == 1){
       time_t current_time = time(NULL);
       for(int i = 0; i < outops->max_addrs; i++){ // Aging out of addresses
@@ -398,6 +381,24 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             }
           }
         }
+      }
+      printf("\033[2J");
+    }
+    printf("\033[H"); // Move cursor home
+    int inc = 1;
+    for(int i = 0; i < outops->max_addrs; i++){ // Print everything
+      if(data[i].empty == 0){
+        printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
+        inc, data[i].addr[0], data[i].addr[1],
+        data[i].addr[2], data[i].addr[3], data[i].addr[4],
+        data[i].addr[5]);
+        if(outops->no_frame_counter == 1){
+          printf(" %d Frames Received", data[i].frames_recv);
+        }
+        if(outops->no_channel == 1){
+          printf(" Channel %d\n", data[i].channel);
+        }
+        inc += 1;
       }
     }
   }
