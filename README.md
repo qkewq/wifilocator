@@ -3,6 +3,7 @@ Locate wifi device or access point based on received signal strength
 Works off of radiotap headers added by the antenna's drivers  
 The antenna must support monitor mode  
 Must have the dbm Antenna Signal flag set in the radiotap header  
+Even with the channel flag set, some drivers will still channel hop automatically  
 
 <br>
 
@@ -15,18 +16,21 @@ or for listing detected transmitting addresses
 Usage: wifilocator [ OPTIONS... ]
 
 Options:
--l, --list					List detected transmitting addresses
--i, --interface <interface>	Specifies the interface to use
--m, --monitor				Put the interface into monitor mode
--t, --target <mac address>	The MAC address to listen for
--h, --help					Display this help message
+-l, --list			              	List detected transmitting addresses
+-i, --interface <interface>	  		Specifies the interface to use
+-m, --monitor			            Put the interface into monitor mode
+-t, --target <mac address>	  		The MAC address to listen for
+-c, --channel <channel>		    	Specifies channel to use
+-h, --help			              	Display this help message
 
 Output Options:
---bssid-only				Only scan for access points
---maximum-addresses <num>	The maximum number of addresses to be
-							listed by the --list option, default 32
---no-frame-counter			Do not output frame counters
---no-bar-in-place			Output dBm bar on consecutive lines
+--bssid-only			          	Only scan for access points
+--maximum-addresses <num>	  		The maximum number of addresses to be
+				                    listed by the --list option, default 32
+--no-frame-counter		      		Do not output frame counters
+--no-bar-in-place		        	Output dBm bar on consecutive lines
+--no-aging			            	Do not age out addresses
+--no-channel			          	Do not display channel
 
 Notes:
 The interface must be in monitor mode to operate
@@ -67,3 +71,4 @@ Checklist
 - Do things in the alternate terminal
 - Add signal handler for SIGINT
 - Add channel hopping
+- Add age out
