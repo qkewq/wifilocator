@@ -15,21 +15,21 @@ or for listing detected transmitting addresses
 Usage: wifilocator [ OPTIONS... ]
 
 Options:
--l, --list			              List detected transmitting addresses
--i, --interface <interface>	  Specifies the interface to use
+-l, --list			              	List detected transmitting addresses
+-i, --interface <interface>	  		Specifies the interface to use
 -m, --monitor			            Put the interface into monitor mode
--t, --target <mac address>	  The MAC address to listen for
--c, --channel <channel>		    Specifies channel to use
--h, --help			              Display this help message
+-t, --target <mac address>	  		The MAC address to listen for
+-c, --channel <channel>		    	Specifies channel to use
+-h, --help			              	Display this help message
 
 Output Options:
---bssid-only			          Only scan for access points
---maximum-addresses <num>	  The maximum number of addresses to be
+--bssid-only			          	Only scan for access points
+--maximum-addresses <num>	  		The maximum number of addresses to be
 				                    listed by the --list option, default 32
---no-frame-counter		      Do not output frame counters
---no-bar-in-place		        Output dBm bar on consecutive lines
---no-aging			            Do not age out addresses
---no-channel			          Do not display channel
+--no-frame-counter		      		Do not output frame counters
+--no-bar-in-place		        	Output dBm bar on consecutive lines
+--no-aging			            	Do not age out addresses
+--no-channel			          	Do not display channel
 
 Notes:
 The interface must be in monitor mode to operate
