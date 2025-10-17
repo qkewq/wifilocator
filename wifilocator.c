@@ -25,7 +25,7 @@ time_t last_sigint = 0; // time() called in first line of main()
 
 static void sigint_handler(int signum){ // Handle ctrl C "properly"
   time_t sigint_time = time(NULL);
-  if(sigint_time - last_sigint <= 3){
+  if(sigint_time - last_sigint <= 3){ // Less than 3 seconds
     write(STDOUT_FILENO, "\033[0m\033[?1049l", 12);
     _exit(0);
   }
@@ -49,18 +49,18 @@ struct s_args{ // Command line arguments
 };
 
 struct s_outops{ // Output options
-  int max_addrs;
-  int no_frame_counter;
-  int no_bar_in_place;
-  int bssid_only;
+  int max_addrs; // Maximum addresses to print
+  int no_frame_counter; // Do not display frame counter
+  int no_bar_in_place; // Do not keep dBm bar on one line
+  int bssid_only; // Only scan for BSSIDs
 };
 
 struct s_data{ // Struct for addr data
-  uint8_t addr[6];
-  int frames_recv;
-  uint8_t channel;
-  time_t last_frame;
-  uint8_t empty;
+  uint8_t addr[6]; // The tx address
+  int frames_recv; // The number of frames received
+  uint8_t channel; // The channel number
+  time_t last_frame; // Time of last frame
+  uint8_t empty; // Is struct considered empty
 };
 
 const uint8_t channel_nums[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,32,36,40,44,48,52,56,60,64,68,
@@ -160,7 +160,7 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
     }
   }
   else if(type == 0x08){ // Data Frame
-    switch(ds){
+    switch(ds){ // To DS, From DS
       case 0x00:
         if(memcmp(&buffer[headlen + 10], &buffer[headlen + 16], 6) == 0){
           bssid = 0;
@@ -289,55 +289,55 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
 }
 
 int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // List recved addrs
-  if(outops->max_addrs <= 0){
+  if(outops->max_addrs <= 0){ // Zero max addrs edge case
     printf("Maximum addresses reached\n");
     return -1;
   }
   struct s_data data[outops->max_addrs] = {};
-  for(int i = 0; i < outops->max_addrs; i++){
+  for(int i = 0; i < outops->max_addrs; i++){ // Set initial struct to empty
     data[i].empty = 1;
   }
-  while(1 == 1){
+  while(1 == 1){ // Main loop
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
     uint16_t freq = 0;
-    if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
+    if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){ //Recv
       printf("Recv Error: %s\n", strerror(errno));
       return -1;
     }
-    int ind = parseaddr(buffer, outops->bssid_only);
+    int ind = parseaddr(buffer, outops->bssid_only); // Get the address in the frame
     if(ind == -1){
       continue;
     }
     for(int i = 0; i < 6; i++){
       addr[i] = buffer[ind + i];
     }
-    int channel_index = parsechannel(buffer);
+    int channel_index = parsechannel(buffer); // Get the freq in the frame
     if(channel_index == -1){
       continue;
     }
     freq = (buffer[channel_index + 1] * 0x100) + buffer[channel_index];
     uint8_t channel = 0;
-    for(int i = 0; i < 51; i++){
+    for(int i = 0; i < 51; i++){ // Convert freq to channel number
       if(channel_freq[i] == freq){
         channel = channel_nums[i];
         break;
       }
     }
     int duplicate = -1;
-    for(int i = 0; i < outops->max_addrs; i++){
-      if(memcmp(data[i].addr, addr, 6) == 0){
+    for(int i = 0; i < outops->max_addrs; i++){ // Check if addr is already in data
+      if(memcmp(data[i].addr, addr, 6) == 0 && data[i].empty == 0){
         duplicate = i;
         break;
       }
     }
-    if(duplicate != -1){
+    if(duplicate != -1){ // Update frame counter and time
       data[duplicate].frames_recv += 1;
       data[duplicate].last_frame = time(NULL);
       data[duplicate].channel = channel;
       data[duplicate].empty = 0;
     }
-    else{
+    else{ // Add new addr to first empty
       for(int i = 0; i < outops->max_addrs; i++){
         if(data[i].empty == 1){
           memcpy(data[i].addr, addr, 6);
@@ -349,9 +349,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         }
       }
     }
-    printf("\033[H");
+    printf("\033[H"); // Move cursor home
     int inc = 1;
-    for(int i = 0; i < outops->max_addrs; i++){
+    for(int i = 0; i < outops->max_addrs; i++){ // Print everything
       if(data[i].empty == 0){
         printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
         inc, data[i].addr[0], data[i].addr[1],
@@ -362,6 +362,34 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         }
         printf(" Channel %d\n", data[i].channel);
         inc += 1;
+      }
+    }
+    time_t current_time = time(NULL);
+    for(int i = 0; i < outops->max_addrs; i++){ // Aging out of addresses
+      if(data[i].empty == 0){
+        if(current_time - data[i].last_frame <= 5){
+          continue;
+        }
+        else{
+          if(data[i].frames_recv <= 5){
+            data[i].empty = 1;
+          }
+          else if(data[i].frames_recv <= 100){
+            if(current_time - data[i].last_frame >= 30){
+              data[i].empty = 1;
+            }
+          }
+          else if(data[i].frames_recv <= 1000){
+            if(current_time - data[i].last_frame >= 60){
+              data[i].empty = 1;
+            }
+          }
+          else{
+            if(current_time - data[i].last_frame >= 180){
+              data[i].empty = 1;
+            }
+          }
+        }
       }
     }
   }
@@ -439,7 +467,7 @@ int main(int argc, char *argv[]){ // Main
     usage();
     return 0;
   }
-  struct sigaction sa;
+  struct sigaction sa; // Signal handler struct
   sa.sa_handler = sigint_handler;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_RESTART;
@@ -459,13 +487,13 @@ int main(int argc, char *argv[]){ // Main
     {0,0,0,0}
   };
 
-  struct s_outops outops;
+  struct s_outops outops; // Initialize outops with default values
   memset(&outops, 0, sizeof(outops));
   outops.max_addrs = 32;
   outops.no_frame_counter = 1;
   outops.no_bar_in_place = 1;
   outops.bssid_only = 1;
-  struct s_args args;
+  struct s_args args; // Initialize args with default values
   memset(&args, 0, sizeof(args));
   args.list = 1;
   args.mon = 1;
@@ -540,11 +568,11 @@ int main(int argc, char *argv[]){ // Main
     }
   }
 
-  struct iwreq iwr;
+  struct iwreq iwr; // Struct for IOCTLs
   memset(&iwr, 0, sizeof(iwr));
   strncpy(iwr.ifr_ifrn.ifrn_name, args.ifc, IFNAMSIZ);
 
-  struct ifreq ifr;
+  struct ifreq ifr; // Struct for IOCTLs
   memset(&ifr, 0, sizeof(ifr));
   strncpy(ifr.ifr_name, args.ifc, IFNAMSIZ);
 
