@@ -72,7 +72,7 @@ const uint16_t channel_freq[] = {2412,2417,2422,2427,2432,2437,2442,2447,2452,24
   5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5720,5745,5765,5785,5805,5825,5845,5865,5885};
 
 int usage(){ // Usage statement
-printf("\nA tool for locating the source of a wireless signal\n"
+  printf("\nA tool for locating the source of a wireless signal\n"
   "or for listing detected transmitting addresses\n\n"
   "Usage: wifilocator [ OPTIONS... ]\n\n"
   "Options:\n"
@@ -396,8 +396,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           printf(" %d Frames Received", data[i].frames_recv);
         }
         if(outops->no_channel == 1){
-          printf(" Channel %d\n", data[i].channel);
+          printf(" Channel %d", data[i].channel);
         }
+        printf("\n");
         inc += 1;
       }
     }
@@ -520,7 +521,7 @@ int main(int argc, char *argv[]){ // Main
     option = getopt_long(argc, argv, "li:mt:h", long_options, &option_index);
     if(option == -1){
       break;
-    } 
+    }
     switch(option){
       case 0:
         if(strcmp(long_options[option_index].name, "maximum-addresses") == 0){
@@ -642,6 +643,27 @@ int main(int argc, char *argv[]){ // Main
     printf("Socket Bind Error: %s\n", strerror(errno));
     close(sockfd);
     return 1;
+  }
+
+  if(args.channel != -1){ // Change channel if set
+    memset(&iwr, 0, sizeof(iwr));
+    strncpy(iwr.ifr_ifrn.ifrn_name, args.ifc, IFNAMSIZ);
+    int freq = 0;
+    for(int i = 0; i < 51; i++){
+      if(channel_nums[i] == args.channel){
+        freq = channel_freq[i];
+        break;
+      }
+    }
+    iwr.u.freq.m = freq;
+    iwr.u.freq.e = 6;
+    iwr.u.freq.i = 0;
+    iwr.u.freq.flags = 0;
+    if(ioctl(sockfd, SIOCSIWFREQ, &iwr) == -1){
+      printf("Channel Error: %s\n", strerror(errno));
+      close(sockfd);
+      return 1;
+    }
   }
 
   printf("\n");
