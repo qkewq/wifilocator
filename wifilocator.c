@@ -355,12 +355,12 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     }
     if(outops->no_aging == 1){
       time_t current_time = time(NULL);
-      for(int i = 0; i < outops->max_addrs; i++){ // Aging out of addresses
+      for(int i = 0; i < outops->max_addrs; i++){ // Aging out inactive addresses
         if(data[i].empty == 0){
           if(current_time - data[i].last_frame <= 5){
             continue;
           }
-          else{
+          else{ // The chopping block
             if(data[i].frames_recv <= 5){
               data[i].empty = 1;
             }
