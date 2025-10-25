@@ -486,8 +486,8 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           selected += 1;
           break;
       }
-      switch(input[0]){
-        case 13: // CR
+      switch(input[0]){ // Locate selected addr
+        case 10: // LF
           int addrselected = 0;
           int indselected = 0;
           for(int i = 0; i < numaddrs; i++){
@@ -507,10 +507,10 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           break;
       }
     }
-    if(selected > numaddrs){
+    if(selected > numaddrs){ // Wrap selector
       selected = 1;
     }
-    else if(selected < 1){
+    else if(selected < 1){ // Wrap selector
       selected = numaddrs;
     }
     printf("\033[H"); // Move cursor home
