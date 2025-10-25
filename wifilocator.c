@@ -311,7 +311,6 @@ int bar(int8_t dbm){ // Print bar
 }
 
 int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // Display dBm of tx
-  printf("\n0 Frames Received");
   for(int i = 0; i < 17; i++){ // Upper casing MAC addr
     if(args->targ[i] >= 97 && args->targ[i] <= 122){
       args->targ[i] = args->targ[i] - 32;
