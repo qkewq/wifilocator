@@ -391,7 +391,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
         printf(" on channel %d", args->channel);
       }
       printf(" | Press 'q' to return...");
-      printf("\n\033[1G");
+      printf("\n\033[1F");
     }
   }
 
