@@ -347,7 +347,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
     if(l_readn > 0){
       switch(l_input){
         case 'q':
-          printf("\033[2J\033[H")
+          printf("\033[2J\033[H");
           return 0;
           break;
       }
