@@ -405,14 +405,34 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       printf("\033[2J");
     }
     char input[3] = {0};
-    int readn = read(STDIN_FILENO, &input, 3);
-    if(readn > 0){
+    int readn = read(STDIN_FILENO, &input, 3); // Reading user input
+    if(readn > 0){ // Moving selector up or down
       switch(input[2]){
         case 'A':
           selected -= 1;
           break;
         case 'B':
           selected += 1;
+          break;
+      }
+      switch(input[0]){
+        case 13: // CR
+          int addrselected = 0;
+          int indselected = 0;
+          for(int i = 0; i < numaddrs; i++){
+            if(data[i].empty == 0){
+              addrselected += 1;
+            }
+            if(addrselected == selected){
+              indselected = i;
+              break;
+            }
+          }
+          snprintf(args->targ, 18, "%02X:%02X:%02X:%02X:%02X:%02X:",
+            data[indeselected].addr[0], data[indeselected].addr[1],
+            data[indeselected].addr[2], data[indeselected].addr[3],
+            data[indeselected].addr[4], data[indeselected].addr[5]);
+          locate(fd, sock, args, outops);
           break;
       }
     }
