@@ -20,7 +20,7 @@
 #define YEL "\e[33m"
 #define GRN "\e[32m"
 #define BLK "\e[30m"
-#define WTBCKGRND_HI "\e[100m"
+#define WTBCKGRND_HI "\e[107m"
 #define NRM "\e[0m"
 
 // Note: I was very stupid when I started this, 0 is a set bit and 1 is an unset bit
