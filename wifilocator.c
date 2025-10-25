@@ -390,7 +390,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
       if(outops->no_channel == 1){
         printf(" on channel %d", args->channel);
       }
-      printf("\nPress 'q' to return to list\033[1F");
+      printf(" | Press 'q' to return...");
     }
   }
 
