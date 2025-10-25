@@ -105,7 +105,7 @@ int usage(){ // Usage statement
   "Examples:\n"
   "wifilocator -i wlan0 -m -i\n"
   "wifilocator -i wlan0 -t xx:xx:xx:xx:xx:xx\n"
-  "wifilocator --interface --list --no-frame-counter\n\n");
+  "wifilocator --interface wlan0 --list --no-frame-counter\n\n");
 
   return 0;
 }
