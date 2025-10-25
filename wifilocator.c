@@ -299,6 +299,77 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   return 0;
 }
 
+int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // Display dBm of tx
+  printf("\n0 Frames Received");
+  for(int i = 0; i < 17; i++){ // Upper casing MAC addr
+    if(args->targ[i] >= 97 && args->targ[i] <= 122){
+      args->targ[i] = args->targ[i] - 32;
+    }
+  }
+  uint8_t target[6] = {0};
+  int x = 0;
+  for(int i = 0; i < 6; i++){ // Converting MAC to integer
+    if(args->targ[i + x] >= 65 && args->targ[i + x] <= 90){
+      target[i] += (args->targ[i + x] - 55) * 16;
+      x++;
+    }
+    else if(args->targ[i + x] >= 48 && args->targ[i + x] <= 57){
+      target[i] += (args->targ[i + x] - 48) * 16;
+      x++;
+    }
+    if(args->targ[i + x] >= 65 && args->targ[i + x] <= 90){
+      target[i] += (args->targ[i + x] - 55);
+      x++;
+    }
+    else if(args->targ[i + x] >= 48 && args->targ[i + x] <= 57){
+      target[i] += (args->targ[i + x] - 48);
+      x++;
+    }
+  }
+  int ind = 0;
+  int dbmind = 0;
+  int8_t dbm = 0;
+  int frames_received = 0;
+  while(1 == 1){
+    uint8_t buffer[4096] = {0};
+    uint8_t addr[6] = {0};
+    int n = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
+    if(n == -1){
+      if(errno == EAGAIN || errno == EWOULDBLOCK){
+        continue;
+      }
+      else{
+        printf("Recv Error: %s\n", strerror(errno));
+        return -1;
+      }
+    }
+    ind = parseaddr(buffer, 1);
+    if(ind == -1){
+      continue;
+    }
+    for(int i = 0; i < 6; i++){
+      addr[i] = buffer[ind + i];
+    }
+    if(memcmp(addr, target, 6) != 0){
+      continue;
+    }
+    dbmind = parsedbm(buffer);
+    if(dbmind == -1){
+      continue;
+    }
+    frames_received += 1;
+    dbm = buffer[dbmind];
+    printf("\033[1F\033[2K");
+    bar(dbm, outops->no_bar_in_place);
+    printf("\033[1E\033[2K");
+    if(outops->no_frame_counter == 1){
+      printf("%d Frames Received", frames_received);
+    }
+  }
+
+  return 0;
+}
+
 int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // List recved addrs
   if(outops->max_addrs <= 0){ // Zero max addrs edge case
     printf("Maximum addresses reached\n");
@@ -429,9 +500,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             }
           }
           snprintf(args->targ, 18, "%02X:%02X:%02X:%02X:%02X:%02X:",
-            data[indeselected].addr[0], data[indeselected].addr[1],
-            data[indeselected].addr[2], data[indeselected].addr[3],
-            data[indeselected].addr[4], data[indeselected].addr[5]);
+            data[indselected].addr[0], data[indselected].addr[1],
+            data[indselected].addr[2], data[indselected].addr[3],
+            data[indselected].addr[4], data[indselected].addr[5]);
           locate(fd, sock, args, outops);
           break;
       }
@@ -467,77 +538,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       }
     }
   }
-  return 0;
-}
-
-int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // Display dBm of tx
-  printf("\n0 Frames Received");
-  for(int i = 0; i < 17; i++){ // Upper casing MAC addr
-    if(args->targ[i] >= 97 && args->targ[i] <= 122){
-      args->targ[i] = args->targ[i] - 32;
-    }
-  }
-  uint8_t target[6] = {0};
-  int x = 0;
-  for(int i = 0; i < 6; i++){ // Converting MAC to integer
-    if(args->targ[i + x] >= 65 && args->targ[i + x] <= 90){
-      target[i] += (args->targ[i + x] - 55) * 16;
-      x++;
-    }
-    else if(args->targ[i + x] >= 48 && args->targ[i + x] <= 57){
-      target[i] += (args->targ[i + x] - 48) * 16;
-      x++;
-    }
-    if(args->targ[i + x] >= 65 && args->targ[i + x] <= 90){
-      target[i] += (args->targ[i + x] - 55);
-      x++;
-    }
-    else if(args->targ[i + x] >= 48 && args->targ[i + x] <= 57){
-      target[i] += (args->targ[i + x] - 48);
-      x++;
-    }
-  }
-  int ind = 0;
-  int dbmind = 0;
-  int8_t dbm = 0;
-  int frames_received = 0;
-  while(1 == 1){
-    uint8_t buffer[4096] = {0};
-    uint8_t addr[6] = {0};
-    int n = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
-    if(n == -1){
-      if(errno == EAGAIN || errno == EWOULDBLOCK){
-        continue;
-      }
-      else{
-        printf("Recv Error: %s\n", strerror(errno));
-        return -1;
-      }
-    }
-    ind = parseaddr(buffer, 1);
-    if(ind == -1){
-      continue;
-    }
-    for(int i = 0; i < 6; i++){
-      addr[i] = buffer[ind + i];
-    }
-    if(memcmp(addr, target, 6) != 0){
-      continue;
-    }
-    dbmind = parsedbm(buffer);
-    if(dbmind == -1){
-      continue;
-    }
-    frames_received += 1;
-    dbm = buffer[dbmind];
-    printf("\033[1F\033[2K");
-    bar(dbm, outops->no_bar_in_place);
-    printf("\033[1E\033[2K");
-    if(outops->no_frame_counter == 1){
-      printf("%d Frames Received", frames_received);
-    }
-  }
-
   return 0;
 }
 
