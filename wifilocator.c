@@ -503,6 +503,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             data[indselected].addr[0], data[indselected].addr[1],
             data[indselected].addr[2], data[indselected].addr[3],
             data[indselected].addr[4], data[indselected].addr[5]);
+          printf("\033[2J\033[H");
           locate(fd, sock, args, outops);
           break;
       }
@@ -537,6 +538,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         inc += 1;
       }
     }
+    printf("Use Arrow Keys and Enter to select address\n");
   }
   return 0;
 }
