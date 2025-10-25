@@ -40,7 +40,7 @@ The MAC address should be six groups of seperated hex digits, any case
 Examples:
 wifilocator -i wlan0 -m -l
 wifilocator -i wlan0 -t xx:xx:xx:xx:xx:xx
-wifilocator --interface --list --no-frame-counter
+wifilocator --interface wlan0 --list --no-frame-counter
 ```
 
 <br>
