@@ -257,7 +257,7 @@ int bar(int8_t dbm){ // Print bar
   int yel = ((cols - 10) / 3) * 2;
   int grn = cols - 10;
   int filled = (((cols - 10) * (100 - dbm * -1)) / 100);
-  int empty = cols - filled;
+  int empty = cols - filled - 10;
   printf("%d dBm [", dbm);
   if(filled <= red){
     printf("%s", RED);
@@ -347,6 +347,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
     if(l_readn > 0){
       switch(l_input){
         case 'q':
+          printf("\033[2J\033[H")
           return 0;
           break;
       }
@@ -390,7 +391,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
       if(outops->no_channel == 1){
         printf(" on channel %d", args->channel);
       }
-      printf("\nPress 'q' to return to list\033[1F")
+      printf("\nPress 'q' to return to list\033[1F");
     }
   }
 
