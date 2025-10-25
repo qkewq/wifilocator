@@ -45,13 +45,13 @@ wifilocator --interface --list --no-frame-counter
 
 <br>
 
-Example output from <code>sudo wifilocator -i wlan0 -l --maximum-addresses 16</code>  
-![List Example](/img/listaddr.png)
+Example output from <code>sudo wifilocator -i wlan0 -lm -c 52</code>  
+![List Example](/img/wllist.png)
 
 <br>
 
-Example output from <code>sudo wifilocator -i wlan0 -t C2:94:F6:00:FA:83 --no-bar-in-place</code>  
-![Scan Example](/img/locaddr.png)
+Example output from either using ```Enter``` when listing or ```sudo wifilocator -i wlan0 -t 74:97:79:FF:1D``` to target a specific address  
+![Scan Example](/img/wltarg.png)
 
 <br>
 
