@@ -247,7 +247,7 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   return 8 + offset;
 }
 
-int bar(int8_t dbm, int no_bar_in_place){ // Print bar
+int bar(int8_t dbm){ // Print bar
   struct winsize ws;
   if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){ // Get window size
     return -1;
@@ -257,13 +257,18 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
   int yel = ((cols - 10) / 3) * 2;
   int grn = cols - 10;
   int filled = (((cols - 10) * (100 - dbm * -1)) / 100);
+  int empty = cols - filled;
   printf("%d dBm [", dbm);
   if(filled <= red){
     printf("%s", RED);
     for(int i = 0; i < filled; i++){
       printf("#");
     }
-    printf("%s]", NRM);
+    printf("%s", NRM);
+    for(int i = 0; i < empty; i++){
+      printf("#");
+    }
+    printf("]");
   }
   else if(filled > red && filled <= yel){
     int i = 0;
@@ -275,7 +280,11 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
     for(i; i < filled; i++){
       printf("#");
     }
-    printf("%s]", NRM);
+    printf("%s", NRM);
+    for(int i = 0; i < empty; i++){
+      printf("#");
+    }
+    printf("]");
   }
   else{
     int i = 0;
@@ -291,11 +300,13 @@ int bar(int8_t dbm, int no_bar_in_place){ // Print bar
     for(i; i < filled; i++){
       printf("#");
     }
-    printf("%s]", NRM);
+    printf("%s", NRM);
+    for(int i = 0; i < empty; i++){
+      printf("#");
+    }
+    printf("]");
   }
-  if(no_bar_in_place == 0){
-    printf("\n\n");
-  }
+  printf("\n");
   return 0;
 }
 
@@ -331,10 +342,19 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
   int8_t dbm = 0;
   int frames_received = 0;
   while(1 == 1){
+    char l_input = 0;
+    int l_readn = read(STDIN_FILENO, &l_input, 1);
+    if(l_readn > 0){
+      switch(l_input){
+        case 'q':
+          return 0;
+          break;
+      }
+    }
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
-    int n = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
-    if(n == -1){
+    int l_recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
+    if(l_recvn == -1){
       if(errno == EAGAIN || errno == EWOULDBLOCK){
         continue;
       }
@@ -343,27 +363,34 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
         return -1;
       }
     }
-    ind = parseaddr(buffer, 1);
-    if(ind == -1){
-      continue;
-    }
-    for(int i = 0; i < 6; i++){
-      addr[i] = buffer[ind + i];
-    }
-    if(memcmp(addr, target, 6) != 0){
-      continue;
-    }
-    dbmind = parsedbm(buffer);
-    if(dbmind == -1){
-      continue;
-    }
-    frames_received += 1;
-    dbm = buffer[dbmind];
-    printf("\033[1F\033[2K");
-    bar(dbm, outops->no_bar_in_place);
-    printf("\033[1E\033[2K");
-    if(outops->no_frame_counter == 1){
-      printf("%d Frames Received", frames_received);
+    else if(l_recvn > 0){
+      ind = parseaddr(buffer, 1);
+      if(ind == -1){
+        continue;
+      }
+      for(int i = 0; i < 6; i++){
+        addr[i] = buffer[ind + i];
+      }
+      if(memcmp(addr, target, 6) != 0){
+        continue;
+      }
+      dbmind = parsedbm(buffer);
+      if(dbmind == -1){
+        continue;
+      }
+      frames_received += 1;
+      dbm = buffer[dbmind];
+      bar(dbm);
+      printf("Listening for %02X:%02X:%02X:%02X:%02X:%02X",
+        target[0], target[1], target[2], target[3],
+        target[4], target[5]);
+      if(outops->no_frame_counter == 1){
+        printf(" | %d Frames Received", frames_received);
+      }
+      if(outops->no_channel == 1){
+        printf(" on channel %d", args->channel);
+      }
+      printf("\nPress 'q' to return to list\033[1F")
     }
   }
 
