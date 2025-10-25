@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <termios.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <linux/wireless.h>
@@ -17,16 +19,21 @@
 #define RED "\e[31m"
 #define YEL "\e[33m"
 #define GRN "\e[32m"
+#define BLK "\e[30m"
+#define WTBCKGRND_HI "\e[100m"
 #define NRM "\e[0m"
 
 // Note: I was very stupid when I started this, 0 is a set bit and 1 is an unset bit
 
 time_t last_sigint = 0; // time() called in first line of main()
 
+struct termios ogattr, stattr; // Set in second line of main()
+
 static void sigint_handler(int signum){ // Handle ctrl C "properly"
   time_t sigint_time = time(NULL);
   if(sigint_time - last_sigint <= 3){ // Less than 3 seconds
     write(STDOUT_FILENO, "\033[0m\033[?1049l", 12);
+    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     _exit(0);
   }
   else{
@@ -301,13 +308,21 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   for(int i = 0; i < outops->max_addrs; i++){ // Set initial struct to empty
     data[i].empty = 1;
   }
+  int selected = 1;
+  int numaddrs = 0;
   while(1 == 1){ // Main loop
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
     uint16_t freq = 0;
-    if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){ //Recv
-      printf("Recv Error: %s\n", strerror(errno));
-      return -1;
+    int recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
+    if(recvn == -1){
+      if(errno == EAGAIN || errno == EWOULDBLOCK){
+        continue;
+      }
+      else{
+        printf("Recv Error: %s\n", strerror(errno));
+        return -1;
+      }
     }
     int ind = parseaddr(buffer, outops->bssid_only); // Get the address in the frame
     if(ind == -1){
@@ -352,6 +367,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           break;
         }
       }
+      numaddrs += 1;
     }
     if(outops->no_aging == 1){
       time_t current_time = time(NULL);
@@ -363,20 +379,24 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           else{ // The chopping block
             if(data[i].frames_recv <= 5){
               data[i].empty = 1;
+              numaddrs -= 1;
             }
             else if(data[i].frames_recv <= 100){
               if(current_time - data[i].last_frame >= 30){
                 data[i].empty = 1;
+                numaddrs -= 1;
               }
             }
             else if(data[i].frames_recv <= 1000){
               if(current_time - data[i].last_frame >= 60){
                 data[i].empty = 1;
+                numaddrs -= 1;
               }
             }
             else{
               if(current_time - data[i].last_frame >= 180){
                 data[i].empty = 1;
+                numaddrs -= 1;
               }
             }
           }
@@ -384,10 +404,31 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       }
       printf("\033[2J");
     }
+    char input[3] = {0};
+    int readn = read(STDIN_FILENO, &input, 3);
+    if(readn > 0){
+      switch(input[2]){
+        case 'A':
+          selected -= 1;
+          break;
+        case 'B':
+          selected += 1;
+          break;
+      }
+    }
+    if(selected > numaddrs){
+      selected = 1;
+    }
+    else if(selected < 1){
+      selected = numaddrs;
+    }
     printf("\033[H"); // Move cursor home
     int inc = 1;
     for(int i = 0; i < outops->max_addrs; i++){ // Print everything
       if(data[i].empty == 0){
+        if(selected == inc){
+          printf("%s%s", BLK, WTBCKGRND_HI);
+        }
         printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
         inc, data[i].addr[0], data[i].addr[1],
         data[i].addr[2], data[i].addr[3], data[i].addr[4],
@@ -397,6 +438,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         }
         if(outops->no_channel == 1){
           printf(" Channel %d", data[i].channel);
+        }
+        if(selected == inc){
+          printf("%s", NRM);
         }
         printf("\n");
         inc += 1;
@@ -440,9 +484,15 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
-    if(recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL) == -1){
-      printf("Recv Error: %s\n", strerror(errno));
-      return -1;
+    int n = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
+    if(n == -1){
+      if(errno == EAGAIN || errno == EWOULDBLOCK){
+        continue;
+      }
+      else{
+        printf("Recv Error: %s\n", strerror(errno));
+        return -1;
+      }
     }
     ind = parseaddr(buffer, 1);
     if(ind == -1){
@@ -473,6 +523,10 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
 
 int main(int argc, char *argv[]){ // Main
   last_sigint = time(NULL);
+  tcgetattr(STDIN_FILENO, &ogattr); // Non-canonical mode
+  stattr = ogattr;
+  stattr.c_lflag &= ~(ICANON | ECHO);
+  fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK); // stdin nonblock
   if(argc == 1){ // No arguments
     usage();
     return 0;
@@ -666,10 +720,14 @@ int main(int argc, char *argv[]){ // Main
     }
   }
 
+  fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK); // Nonblocking socket
+
   printf("\n");
   if(args.list == 0){ // Call list and close
     printf("\033[?1049h\033[H");
+    tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     list(sockfd, &sock, &args, &outops);
+    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     printf("\033[0m\033[?1049l");
     close(sockfd);
     return 0;
@@ -677,7 +735,9 @@ int main(int argc, char *argv[]){ // Main
 
   if(args.targ_present == 0){ // Call locate and close
     printf("\033[?1049h\033[H");
+    tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     locate(sockfd, &sock, &args, &outops);
+    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     printf("\033[0m\033[?1049l");
     close(sockfd);
     return 0;
