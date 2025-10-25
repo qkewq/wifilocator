@@ -395,50 +395,52 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         return -1;
       }
     }
-    int ind = parseaddr(buffer, outops->bssid_only); // Get the address in the frame
-    if(ind == -1){
-      continue;
-    }
-    for(int i = 0; i < 6; i++){
-      addr[i] = buffer[ind + i];
-    }
-    int channel_index = parsechannel(buffer); // Get the freq in the frame
-    if(channel_index == -1){
-      continue;
-    }
-    freq = (buffer[channel_index + 1] * 0x100) + buffer[channel_index];
-    uint8_t channel = 0;
-    for(int i = 0; i < 51; i++){ // Convert freq to channel number
-      if(channel_freq[i] == freq){
-        channel = channel_nums[i];
-        break;
+    else if(recvn > 0){
+      int ind = parseaddr(buffer, outops->bssid_only); // Get the address in the frame
+      if(ind == -1){
+        continue;
       }
-    }
-    int duplicate = -1;
-    for(int i = 0; i < outops->max_addrs; i++){ // Check if addr is already in data
-      if(memcmp(data[i].addr, addr, 6) == 0 && data[i].empty == 0){
-        duplicate = i;
-        break;
+      for(int i = 0; i < 6; i++){
+        addr[i] = buffer[ind + i];
       }
-    }
-    if(duplicate != -1){ // Update frame counter and time
-      data[duplicate].frames_recv += 1;
-      data[duplicate].last_frame = time(NULL);
-      data[duplicate].channel = channel;
-      data[duplicate].empty = 0;
-    }
-    else{ // Add new addr to first empty
-      for(int i = 0; i < outops->max_addrs; i++){
-        if(data[i].empty == 1){
-          memcpy(data[i].addr, addr, 6);
-          data[i].frames_recv = 1;
-          data[i].last_frame = time(NULL);
-          data[i].channel = channel;
-          data[i].empty = 0;
+      int channel_index = parsechannel(buffer); // Get the freq in the frame
+      if(channel_index == -1){
+        continue;
+      }
+      freq = (buffer[channel_index + 1] * 0x100) + buffer[channel_index];
+      uint8_t channel = 0;
+      for(int i = 0; i < 51; i++){ // Convert freq to channel number
+        if(channel_freq[i] == freq){
+          channel = channel_nums[i];
           break;
         }
       }
-      numaddrs += 1;
+      int duplicate = -1;
+      for(int i = 0; i < outops->max_addrs; i++){ // Check if addr is already in data
+        if(memcmp(data[i].addr, addr, 6) == 0 && data[i].empty == 0){
+          duplicate = i;
+          break;
+        }
+      }
+      if(duplicate != -1){ // Update frame counter and time
+        data[duplicate].frames_recv += 1;
+        data[duplicate].last_frame = time(NULL);
+        data[duplicate].channel = channel;
+        data[duplicate].empty = 0;
+      }
+      else{ // Add new addr to first empty
+        for(int i = 0; i < outops->max_addrs; i++){
+          if(data[i].empty == 1){
+            memcpy(data[i].addr, addr, 6);
+            data[i].frames_recv = 1;
+            data[i].last_frame = time(NULL);
+            data[i].channel = channel;
+            data[i].empty = 0;
+            break;
+          }
+        }
+        numaddrs += 1;
+      }
     }
     if(outops->no_aging == 1){
       time_t current_time = time(NULL);
