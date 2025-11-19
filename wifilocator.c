@@ -711,7 +711,7 @@ int main(int argc, char *argv[]){ // Main
   strncpy(ifr.ifr_name, args.ifc, IFNAMSIZ);
 
   if(outops.verbose == 1){
-    printf("Attempting to create raw socket on %s\n", args.ifc);
+    printf("Attempting to create raw socket\n");
   }
   struct sockaddr_ll sock; // Create raw socket
   memset(&sock, 0, sizeof(sock));
@@ -721,7 +721,7 @@ int main(int argc, char *argv[]){ // Main
     return 1;
   }
   if(outops.verbose == 1){
-    printf("Socket created on %s, FD=%d\n", args.ifc, sockfd);
+    printf("Socket created, FD=%d\n" sockfd);
   }
 
   if(args.mon == 1){ // Set monitor mode
