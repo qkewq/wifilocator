@@ -74,3 +74,4 @@ Checklist
 - Add age out
 - Filter by rx address
 - Errors should be written to the normal buffer
+- Add verbosity argument
