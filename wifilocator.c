@@ -96,6 +96,7 @@ int usage(){ // Usage statement
   "-t, --target <mac address>\tThe MAC address to listen for\n"
   "-c, --channel <channel>\t\tSpecifies the channel to use\n"
   "\t\t\t\tValue < 1000 denotes channel, value > 1000 denotes Mhz\n"
+  "-v, --verbose\t\t\tOutput verbose information\n"
   "-h, --help\t\t\tDisplay this help message\n\n"
   "Output options:\n"
   "--bssid-only\t\t\tOnly scan for access points\n"
