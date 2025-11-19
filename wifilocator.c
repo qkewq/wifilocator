@@ -721,7 +721,7 @@ int main(int argc, char *argv[]){ // Main
     return 1;
   }
   if(outops.verbose == 1){
-    printf("Socket created, FD=%d\n" sockfd);
+    printf("Socket created, FD=%d\n", sockfd);
   }
 
   if(args.mon == 1){ // Set monitor mode
