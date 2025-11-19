@@ -88,6 +88,7 @@ int usage(){ // Usage statement
   "-m, --monitor\t\t\tPut the interface into monitor mode\n"
   "-t, --target <mac address>\tThe MAC address to listen for\n"
   "-c, --channel <channel>\t\tSpecifies the channel to use\n"
+  "\t\t\t\tValue < 1000 denotes channel, value > 1000 denotes Mhz\n"
   "-h, --help\t\t\tDisplay this help message\n\n"
   "Output options:\n"
   "--bssid-only\t\t\tOnly scan for access points\n"
@@ -755,11 +756,16 @@ int main(int argc, char *argv[]){ // Main
     memset(&iwr, 0, sizeof(iwr));
     strncpy(iwr.ifr_ifrn.ifrn_name, args.ifc, IFNAMSIZ);
     int freq = 0;
-    for(int i = 0; i < 51; i++){
-      if(channel_nums[i] == args.channel){
-        freq = channel_freq[i];
-        break;
+    if(args.channel < 1000){
+      for(int i = 0; i < 51; i++){
+        if(channel_nums[i] == args.channel){
+          freq = channel_freq[i];
+          break;
+        }
       }
+    }
+    else if(args.channel >= 1000){
+      freq = args.channel;
     }
     iwr.u.freq.m = freq;
     iwr.u.freq.e = 6;
