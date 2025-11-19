@@ -23,7 +23,13 @@
 #define WTBCKGRND_HI "\e[107m"
 #define NRM "\e[0m"
 
-// Note: I was very stupid when I started this, 0 is a set bit and 1 is an unset bit
+#define CLS "\e[2J"
+#define HME "\e[H"
+#define ALTBUF "\e[?1049h"
+#define NRMBUF "\e[?1049l"
+#define UPONE "\e[1F"
+
+// Note: I was very stupid when I started this, 0 is a set bit and 1 is an unset bit :FIXED:
 
 time_t last_sigint = 0; // time() called in first line of main()
 
@@ -61,9 +67,10 @@ struct s_outops{ // Output options
   int no_bar_in_place; // Do not keep dBm bar on one line
   int no_aging; // Do not age out addrs
   int bssid_only; // Only scan for BSSIDs
+  int verbose; // Verbose output
 };
 
-struct s_data{ // Struct for addr data
+struct s_data{ // Data structure for addr data
   uint8_t addr[6]; // The tx address
   int frames_recv; // The number of frames received
   uint8_t channel; // The channel number
@@ -128,19 +135,19 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
   uint8_t type = buffer[headlen] & 0x0C; // Frame type
   uint8_t subtype = buffer[headlen] & 0xF0; // Frame subtype
   uint8_t ds = buffer[headlen + 1] & 0x03; // DS bits
-  int bssid = 1; // Addr is a bssid
+  int bssid = 0; // Addr is a bssid
   int index = 0; // Index of addr
   // Checking for frame type and subtype to get addr offset
   if(type == 0x00){ // Management Frame
     if(memcmp(&buffer[headlen + 10], &buffer[headlen + 16], 6) == 0){
-      bssid = 0;
+      bssid = 1;
     }
     index = headlen + 10;
   }
   else if(type == 0x04){ // Control Frame
     switch(subtype){
       case 0x40: // Beamforming
-        bssid = 0;
+        bssid = 1;
         index = headlen + 10;
         break;
       case 0x50: // NDP Announcement
@@ -150,7 +157,7 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
         index = headlen + 10;
         break;
       case 0x90: // Block Ack
-        bssid = 0;
+        bssid = 1;
         index = headlen + 10;
         break;
       case 0xA0: // PS-Poll
@@ -160,11 +167,11 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
         index = headlen + 10;
         break;
       case 0xE0: // CF-End
-        bssid = 0;
+        bssid = 1;
         index = headlen + 10;
         break;
       case 0xF0: // CF-End+CF-Ack
-        bssid = 0;
+        bssid = 1;
         index = headlen + 10;
         break;
       default:
@@ -175,19 +182,19 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
     switch(ds){ // To DS, From DS
       case 0x00:
         if(memcmp(&buffer[headlen + 10], &buffer[headlen + 16], 6) == 0){
-          bssid = 0;
+          bssid = 1;
         }
         index = headlen + 10;
         break;
       case 0x01:
-        bssid = 0;
+        bssid = 1;
         index = headlen + 10;
         break;
       case 0x02:
         index = headlen + 10;
         break;
       case 0x03:
-        bssid = 0;
+        bssid = 1;
         index = headlen + 10;
         break;
       default:
@@ -197,10 +204,10 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
   else{
     return -1;
   }
-  if(bssid_only == 1){
+  if(bssid_only == 0){
     return index;
   }
-  else if(bssid_only == 0 && bssid == 0){
+  else if(bssid_only == 1 && bssid == 1){
     return index;
   }
 
@@ -347,7 +354,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
     if(l_readn > 0){
       switch(l_input){
         case 'q':
-          printf("\033[2J\033[H");
+          printf("%s%s", CLS, HME);
           return 0;
           break;
       }
@@ -385,14 +392,14 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
       printf("Listening for %02X:%02X:%02X:%02X:%02X:%02X",
         target[0], target[1], target[2], target[3],
         target[4], target[5]);
-      if(outops->no_frame_counter == 1){
+      if(outops->no_frame_counter == 0){
         printf(" | %d Frames Received", frames_received);
       }
-      if(outops->no_channel == 1){
+      if(outops->no_channel == 0){
         printf(" on channel %d", args->channel);
       }
       printf(" | Press 'q' to return...");
-      printf("\n\033[1F");
+      printf("\n%s", UPONE);
     }
   }
 
@@ -471,7 +478,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         numaddrs += 1;
       }
     }
-    if(outops->no_aging == 1){
+    if(outops->no_aging == 0){
       time_t current_time = time(NULL);
       for(int i = 0; i < outops->max_addrs; i++){ // Aging out inactive addresses
         if(data[i].empty == 0){
@@ -504,7 +511,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           }
         }
       }
-      printf("\033[2J");
+      printf("%s", CLS);
     }
     char input[3] = {0};
     int readn = read(STDIN_FILENO, &input, 3); // Reading user input
@@ -534,7 +541,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             data[indselected].addr[0], data[indselected].addr[1],
             data[indselected].addr[2], data[indselected].addr[3],
             data[indselected].addr[4], data[indselected].addr[5]);
-          printf("\033[2J\033[H");
+          printf("%s%s", CLS, HME);
           locate(fd, sock, args, outops);
           break;
       }
@@ -545,7 +552,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     else if(selected < 1){ // Wrap selector
       selected = numaddrs;
     }
-    printf("\033[H"); // Move cursor home
+    printf("%s", HME); // Move cursor home
     int inc = 1;
     for(int i = 0; i < outops->max_addrs; i++){ // Print everything
       if(data[i].empty == 0){
@@ -556,10 +563,10 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         inc, data[i].addr[0], data[i].addr[1],
         data[i].addr[2], data[i].addr[3], data[i].addr[4],
         data[i].addr[5]);
-        if(outops->no_frame_counter == 1){
+        if(outops->no_frame_counter == 0){
           printf(" %d Frames Received", data[i].frames_recv);
         }
-        if(outops->no_channel == 1){
+        if(outops->no_channel == 0){
           printf(" Channel %d", data[i].channel);
         }
         if(selected == inc){
@@ -596,6 +603,7 @@ int main(int argc, char *argv[]){ // Main
     {"monitor", no_argument, 0, 'm'},
     {"target", required_argument, 0, 't'},
     {"channel", required_argument, 0, 'c'},
+    {"verbose", no_argument, 0, 'v'},
     {"help", no_argument, 0, 'h'},
     {"maximum-addresses", required_argument, 0, 0},
     {"no-frame-counter", no_argument, 0, 0},
@@ -609,23 +617,13 @@ int main(int argc, char *argv[]){ // Main
   struct s_outops outops; // Initialize outops with default values
   memset(&outops, 0, sizeof(outops));
   outops.max_addrs = 32;
-  outops.no_frame_counter = 1;
-  outops.no_channel = 1;
-  outops.no_bar_in_place = 1;
-  outops.no_aging = 1;
-  outops.bssid_only = 1;
   struct s_args args; // Initialize args with default values
   memset(&args, 0, sizeof(args));
-  args.list = 1;
-  args.mon = 1;
-  args.help = 1;
-  args.ifc_present = 1;
-  args.targ_present = 1;
   args.channel = -1;
   int option;
   while(1 == 1){ // Get flags and options
     int option_index = 0;
-    option = getopt_long(argc, argv, "li:mt:c:h", long_options, &option_index);
+    option = getopt_long(argc, argv, "li:mt:c:vh", long_options, &option_index);
     if(option == -1){
       break;
     }
@@ -635,40 +633,43 @@ int main(int argc, char *argv[]){ // Main
           outops.max_addrs = atoi(optarg);
         }
         else if(strcmp(long_options[option_index].name, "no-frame-counter") == 0){
-          outops.no_frame_counter = 0;
+          outops.no_frame_counter = 1;
         }
         else if(strcmp(long_options[option_index].name, "no-channel") == 0){
-          outops.no_channel = 0;
+          outops.no_channel = 1;
         }
         else if(strcmp(long_options[option_index].name, "no-bar-in-place") == 0){
-          outops.no_bar_in_place = 0;
+          outops.no_bar_in_place = 1;
         }
         else if(strcmp(long_options[option_index].name, "no-aging") == 0){
-          outops.no_aging = 0;
+          outops.no_aging = 1;
         }
         else if(strcmp(long_options[option_index].name, "bssid-only") == 0){
-          outops.bssid_only = 0;
+          outops.bssid_only = 1;
         }
         continue;
       case 'l':
-        args.list = 0;
+        args.list = 1;
         continue;
       case 'i':
         strncpy(args.ifc, optarg, strlen(optarg));
-        args.ifc_present = 0;
+        args.ifc_present = 1;
         continue;
       case 'm':
-        args.mon = 0;
+        args.mon = 1;
         continue;
       case 't':
         strncpy(args.targ, optarg, strlen(optarg));
-        args.targ_present = 0;
+        args.targ_present = 1;
         continue;
       case 'c':
         args.channel = atoi(optarg);
         continue;
+      case 'v':
+        outops.verbose = 1;
+        continue;
       case 'h':
-        args.help = 0;
+        args.help = 1;
         usage();
         continue;
       default:
@@ -676,8 +677,8 @@ int main(int argc, char *argv[]){ // Main
     }
   }
 
-  if(args.ifc_present == 1){ // Check for interface argument
-    if(args.targ_present == 0 || args.list == 0 || args.mon == 0){
+  if(args.ifc_present == 0){ // Check for interface argument
+    if(args.targ_present == 1 || args.list == 1 || args.mon == 1){
       printf("Error: -i, --interface argument required\n");
       return 1;
     }
@@ -686,7 +687,7 @@ int main(int argc, char *argv[]){ // Main
     }
   }
 
-  if(args.targ_present == 0){ // Check MAC addr format
+  if(args.targ_present == 1){ // Check MAC addr format
     if(strlen(args.targ) != 17){
       printf("Error: MAC address should be 17 characters, ");
       printf("xx:xx:xx:xx:xx:xx\n");
@@ -710,14 +711,14 @@ int main(int argc, char *argv[]){ // Main
     return 1;
   }
 
-  if(args.mon == 0){ // Set monitor mode
+  if(args.mon == 1){ // Set monitor mode
     if(monitor(sockfd, &iwr) == -1){
       close(sockfd);
       return 1;
     }
   }
 
-  if(args.list == 1 && args.targ_present == 1){ // Exit if done
+  if(args.list == 0 && args.targ_present == 0){ // Exit if done
     close(sockfd);
     return 0;
   }
@@ -781,22 +782,22 @@ int main(int argc, char *argv[]){ // Main
   fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK); // Nonblocking socket
 
   printf("\n");
-  if(args.list == 0){ // Call list and close
-    printf("\033[?1049h\033[H");
+  if(args.list == 1){ // Call list and close
+    printf("%s%s", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     list(sockfd, &sock, &args, &outops);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
-    printf("\033[0m\033[?1049l");
+    printf("%s%s", NRM, NRMBUF);
     close(sockfd);
     return 0;
   }
 
-  if(args.targ_present == 0){ // Call locate and close
-    printf("\033[?1049h\033[H");
+  if(args.targ_present == 1){ // Call locate and close
+    printf("%s%s", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     locate(sockfd, &sock, &args, &outops);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
-    printf("\033[0m\033[?1049l");
+    printf("%s%s", NRM, NRMBUF);
     close(sockfd);
     return 0;
   }
