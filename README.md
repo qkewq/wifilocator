@@ -21,7 +21,7 @@ Options:
 -m, --monitor			            Put the interface into monitor mode
 -t, --target <mac address>	  		The MAC address to listen for
 -c, --channel <channel>		    	Specifies channel to use
-                                Value < 1000 denotes channel, value > 1000 denotes MHz
+                                	Value < 1000 denotes channel, value > 1000 denotes MHz
 -h, --help			              	Display this help message
 
 Output Options:
