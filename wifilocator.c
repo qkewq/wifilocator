@@ -677,8 +677,11 @@ int main(int argc, char *argv[]){ // Main
     }
   }
 
+  if(outops.verbose == 1){
+    printf("Starting...\nChecking arguments\n");
+  }
   if(args.ifc_present == 0){ // Check for interface argument
-    if(args.targ_present == 1 || args.list == 1 || args.mon == 1){
+    if(args.targ_present == 1 || args.list == 1 || args.mon == 1 || args.channel != -1){
       printf("Error: -i, --interface argument required\n");
       return 1;
     }
@@ -688,6 +691,9 @@ int main(int argc, char *argv[]){ // Main
   }
 
   if(args.targ_present == 1){ // Check MAC addr format
+    if(outops.verbose == 1){
+      printf("Checking target address format\n");
+    }
     if(strlen(args.targ) != 17){
       printf("Error: MAC address should be 17 characters, ");
       printf("xx:xx:xx:xx:xx:xx\n");
@@ -703,6 +709,9 @@ int main(int argc, char *argv[]){ // Main
   memset(&ifr, 0, sizeof(ifr));
   strncpy(ifr.ifr_name, args.ifc, IFNAMSIZ);
 
+  if(outops.verbose == 1){
+    printf("Attempting to create raw socket on %s\n", args.ifc);
+  }
   struct sockaddr_ll sock; // Create raw socket
   memset(&sock, 0, sizeof(sock));
   int sockfd = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
@@ -710,26 +719,47 @@ int main(int argc, char *argv[]){ // Main
     printf("Socket Creation Error: %s\n", strerror(errno));
     return 1;
   }
+  if(outops.verbose == 1){
+    printf("Socket created on %s, FD=%d\n", args.ifc, sockfd);
+  }
 
   if(args.mon == 1){ // Set monitor mode
+    if(outops.verbose == 1){
+      printf("Attempting to set monitor mode on %s\n", args.ifc);
+    }
     if(monitor(sockfd, &iwr) == -1){
       close(sockfd);
       return 1;
     }
+    if(outops.verbose == 1){
+      printf("Monitor mode set\n");
+    }
   }
 
   if(args.list == 0 && args.targ_present == 0){ // Exit if done
+    if(outops.verbose == 1){
+      printf("Exiting\n");
+    }
     close(sockfd);
     return 0;
   }
 
+  if(outops.verbose == 1){
+    printf("Retrieving interface index\n");
+  }
   if(ioctl(sockfd, SIOCGIFINDEX, &ifr) == -1){ // Get index of interface
     printf("Index Error: %s\n", strerror(errno));
     close(sockfd);
     return 1;
   }
   args.ind = ifr.ifr_ifindex;
+  if(outops.verbose == 1){
+    printf("Interface found at index %d\n", args.ind);
+  }
 
+  if(outops.verbose == 1){
+    printf("Checking interface mode\n");
+  }
   iwr.u.mode = 0;
   if(ioctl(sockfd, SIOCGIWMODE, &iwr) == -1){ // Check mode
     printf("Mode Check Error: %s\n", strerror(errno));
@@ -742,18 +772,31 @@ int main(int argc, char *argv[]){ // Main
     close(sockfd);
     return 1;
   }
+  if(outops.verbose == 1){
+    printf("Interface in monitor mode\n");
+  }
 
   sock.sll_family = AF_PACKET;
   sock.sll_protocol = htons(ETH_P_ALL);
   sock.sll_ifindex = args.ind;
 
+  if(outops.verbose == 1){
+    printf("Binding raw socket to interface %s\n", args.ifc);
+  }
   if(bind(sockfd, (struct sockaddr *)&sock, sizeof(sock)) == -1){ // Bind raw socket to index
     printf("Socket Bind Error: %s\n", strerror(errno));
     close(sockfd);
     return 1;
   }
+  if(outops.verbose == 1){
+    printf("Socket bound\n");
+  }
 
   if(args.channel != -1){ // Change channel if set
+    if(outops.verbose == 1){
+      printf("Channel argument detected\n"
+      "Attempting to set channel\n");
+    }
     memset(&iwr, 0, sizeof(iwr));
     strncpy(iwr.ifr_ifrn.ifrn_name, args.ifc, IFNAMSIZ);
     int freq = 0;
@@ -777,28 +820,47 @@ int main(int argc, char *argv[]){ // Main
       close(sockfd);
       return 1;
     }
+    if(outops.verbose == 1){
+      printf("Interface operating at %d MHz\n", freq);
+    }
   }
 
+  if(outops.verbose == 1){
+    printf("Making socket non-blocking\n");
+  }
   fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK); // Nonblocking socket
 
-  printf("\n");
   if(args.list == 1){ // Call list and close
+    if(outops.verbose == 1){
+      printf("Enabling non-canonical mode\n"
+      "Entering list mode\n");
+    }
     printf("%s%s", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     list(sockfd, &sock, &args, &outops);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     printf("%s%s", NRM, NRMBUF);
     close(sockfd);
+    if(outops.verbose == 1){
+      printf("Exiting\n");
+    }
     return 0;
   }
 
   if(args.targ_present == 1){ // Call locate and close
+    if(outops.verbose == 1){
+      printf("Enabling non-canonical mode\n"
+      "Entering locate mode\n");
+    }
     printf("%s%s", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     locate(sockfd, &sock, &args, &outops);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     printf("%s%s", NRM, NRMBUF);
     close(sockfd);
+    if(outops.verbose == 1){
+      printf("Exiting\n");
+    }
     return 0;
   }
 
