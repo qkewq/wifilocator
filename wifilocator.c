@@ -218,6 +218,13 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
 int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
   // Checking for flags and adjusting the offset
   int offset = 0;
+  while(1 == 1){ // Multiple flag fields
+    if((buffer[4] & 0x40000000) == 0x00)
+      break;
+    else{
+      offset += 4;
+    }
+  }
   if((buffer[4] & 0x20) == 0x00){ // Signal Present
     return -1;
   }
@@ -241,6 +248,13 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
 
 int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   int offset = 0;
+  while(1 == 1){ // Multiple flag fields
+    if((buffer[4] & 0x40000000) == 0x00)
+      break;
+    else{
+      offset += 4;
+    }
+  }
   if((buffer[4] & 0x08) == 0x00){ // Channel Present
     return -1;
   }
