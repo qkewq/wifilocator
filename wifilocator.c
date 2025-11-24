@@ -286,7 +286,7 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   return 8 + offset;
 }
 
-int parsessid(uint8_t buffer[2048], int freq, int chind){
+int parsessid(uint8_t buffer[2048], int freq, int chind, int recvn){
   if(chind == -1 || freq != ((buffer[chind + 1] * 0x100) + buffer[chind])){
     return -1;
   }
@@ -299,7 +299,7 @@ int parsessid(uint8_t buffer[2048], int freq, int chind){
   }
   if(subtype == 0x80 || subtype == 0x50){
     int ssidind = headlen + 36;
-    while(ssidind < sizeof(buffer)){ // !!!!! POSSIBLE MEMORY SHIT !!!!!
+    while(ssidind < recvn){ // !!!!! POSSIBLE MEMORY SHIT !!!!!
       switch(ssidind){
         case 0x00:
           return ssidind;
@@ -639,8 +639,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   return 0;
 }
 
-int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw_range *range, int num_channels){ // Scan active channels
+int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw_range *range){ // Scan active channels
   time_t scantime = 0;
+  uint16_t num_channels = range.num_channels;
   struct s_datall data[num_channels];
   for(int i = 0; i < num_channels; i++){ //Initialize linked lists
     data[i].next == NULL;
@@ -692,7 +693,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
         }
       }
       else if(recvn > 0){
-        ssidind = parsessid(buffer, data[i].freq, parsechannel(buffer));
+        ssidind = parsessid(buffer, data[i].freq, parsechannel(buffer), recvn);
         if(ssidind <= 0){
           continue;
         }
@@ -705,7 +706,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
             memcpy(new_node->ssid, "Hidden Network", 14);
           }
           else if(buffer[ssidind + 1] > 0){
-            memcpy(new_node->ssid, buffer[ssidind + 2], buffer[ssidind] + 1);
+            memcpy(new_node->ssid, &buffer[ssidind + 2], buffer[ssidind] + 1);
           }
           struct s_datall *current = &data[i];
           while(current->next != NULL){
@@ -748,7 +749,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
         }
       }
       else if(recvn > 0){
-        int ssidind = parsessid(buffer, data[i].freq, parsechannel(buffer));
+        int ssidind = parsessid(buffer, data[i].freq, parsechannel(buffer), recvn);
         if(ssidind <= 0){
           continue;
         }
@@ -761,7 +762,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
             memcpy(new_node->ssid, "Hidden Network", 14);
           }
           else if(buffer[ssidind + 1] > 0){
-            memcpy(new_node->ssid, buffer[ssidind + 2], buffer[ssidind] + 1);
+            memcpy(new_node->ssid, &buffer[ssidind + 2], buffer[ssidind] + 1);
           }
           struct s_datall *current = &data[i];
           while(current->next != NULL){
@@ -1111,7 +1112,7 @@ int main(int argc, char *argv[]){ // Main
     }
     printf("%s%s", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
-    channel_scan(sockfd, &args, &outops, &range, num_channels);
+    channel_scan(sockfd, &args, &outops, &range);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     printf("%s%s", NRM, NRMBUF);
     close(sockfd);
