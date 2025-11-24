@@ -52,6 +52,7 @@ struct s_args{ // Command line arguments
   int list; // List flag set
   int mon; // Set monitor mode flag set
   int ind; // Index of interface
+  int scan; // Scan flag set
   int help; // Help flag set
   int targ_present; // Target flag set
   int ifc_present; // Interface flag set
@@ -820,6 +821,7 @@ int main(int argc, char *argv[]){ // Main
     {"interface", required_argument, 0, 'i'},
     {"monitor", no_argument, 0, 'm'},
     {"target", required_argument, 0, 't'},
+    {"scan", no_argument, 0, 's'},
     {"channel", required_argument, 0, 'c'},
     {"verbose", no_argument, 0, 'v'},
     {"help", no_argument, 0, 'h'},
@@ -841,7 +843,7 @@ int main(int argc, char *argv[]){ // Main
   int option;
   while(1 == 1){ // Get flags and options
     int option_index = 0;
-    option = getopt_long(argc, argv, "li:mt:c:vh", long_options, &option_index);
+    option = getopt_long(argc, argv, "li:mt:sc:vh", long_options, &option_index);
     if(option == -1){
       break;
     }
@@ -880,6 +882,9 @@ int main(int argc, char *argv[]){ // Main
         strncpy(args.targ, optarg, strlen(optarg));
         args.targ_present = 1;
         continue;
+      case 's':
+        args.scan == 1;
+        continue;
       case 'c':
         args.channel = atoi(optarg);
         continue;
@@ -899,7 +904,7 @@ int main(int argc, char *argv[]){ // Main
     printf("Starting...\nChecking arguments\n");
   }
   if(args.ifc_present == 0){ // Check for interface argument
-    if(args.targ_present == 1 || args.list == 1 || args.mon == 1 || args.channel != -1){
+    if(args.targ_present == 1 || args.list == 1 || args.mon == 1 || args.channel != -1 || args.scan == 1){
       printf("Error: -i, --interface argument required\n");
       return 1;
     }
