@@ -959,7 +959,7 @@ int main(int argc, char *argv[]){ // Main
     }
   }
 
-  if(args.list == 0 && args.targ_present == 0){ // Exit if done
+  if(args.list == 0 && args.targ_present == 0 && args.scan == 0){ // Exit if done
     if(outops.verbose == 1){
       printf("Exiting\n");
     }
