@@ -236,7 +236,7 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
   // Checking for flags and adjusting the offset
   int offset = 0;
   while(1 == 1){ // Multiple flag fields
-    if((buffer[4] & 0x20000000) == 0x00)
+    if((buffer[7] & 0x20) == 0x00)
       break;
     else{
       offset += 4;
@@ -266,7 +266,7 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
 int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   int offset = 0;
   while(1 == 1){ // Multiple flag fields
-    if((buffer[4] & 0x20000000) == 0x00)
+    if((buffer[7] & 0x20) == 0x00)
       break;
     else{
       offset += 4;
