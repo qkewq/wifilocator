@@ -139,7 +139,7 @@ int monitor(int fd, struct iwreq *iwr){ // Enables monitor mode
 uint8_t freq_to_channel(int freq){
   for(int i = 0; i < 51; i++){
     if(channel_freq[i] == freq){
-      return channel_nums[i]
+      return channel_nums[i];
     }
   }
   return 0;
@@ -305,7 +305,7 @@ int parsessid(uint8_t buffer[2048], int freq, int chind){
           return ssidind;
           break;
         default:
-          ssidind += (buffer[ssidind + 1] + 2)
+          ssidind += (buffer[ssidind + 1] + 2);
           break;
       }
     }
@@ -645,12 +645,12 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
   for(int i = 0; i < num_channels; i++){ //Initialize linked lists
     data[i].next == NULL;
     memset(&data[i].ssid, 0, 32);
-    data[i].freq = range.freq[i].m;
+    data[i].freq = range->freq[i].m;
     data[i].active = 0;
   }
   for(int i = 0; i < num_channels; i++){
     uint8_t buffer[2048] = {0};
-    if(ioctl(fd, SIOCSIWFREQ, &range.freq[i]) == -1){ // Channel change
+    if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
       printf("Channel Error: %s\n", strerror(errno));
       return -1;
     }
@@ -674,7 +674,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
     if(data[i].active == 0){
       continue;
     }
-    if(ioctl(fd, SIOCSIWFREQ, &range.freq[i]) == -1){ // Channel change
+    if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
       printf("Channel Error: %s\n", strerror(errno));
       return -1;
     }
@@ -699,13 +699,13 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
         else if(ssidind > 0){
           struct s_datall *new_node = malloc(sizeof(new_node));
           new_node->active = 0;
-          new_node->freq = 0
+          new_node->freq = 0;
           new_node->next = NULL;
           if(buffer[ssidind + 1] == 0){
-            strncpy(new_node, "Hidden Network", 14);
+            memcpy(new_node->ssid, "Hidden Network", 14);
           }
           else if(buffer[ssidind + 1] > 0){
-            strncpy(new_node, buffer[ssidind + 2], buffer[ssidind + 1]);
+            memcpy(new_node->ssid, buffer[ssidind + 2], buffer[ssidind] + 1);
           }
           struct s_datall *current = &data[i];
           while(current->next != NULL){
@@ -727,13 +727,13 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
     struct s_datall *current = data[i].next;
     while(current != NULL){
       printf("\t%s\n", current->ssid);
-      current = current->next
+      current = current->next;
     }
   }
   while(1 == 1){
     for(int i = 0; i < num_channels; i++){
       uint8_t buffer[2048] = {0};
-      if(ioctl(fd, SIOCSIWFREQ, &range.freq[i]) == -1){ // Channel change
+      if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
         printf("Channel Error: %s\n", strerror(errno));
         return -1;
       }
@@ -755,13 +755,13 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
         else if(ssidind > 0){
           struct s_datall *new_node = malloc(sizeof(new_node));
           new_node->active = 0;
-          new_node->freq = 0
+          new_node->freq = 0;
           new_node->next = NULL;
           if(buffer[ssidind + 1] == 0){
-            strncpy(new_node, "Hidden Network", 14);
+            memcpy(new_node->ssid, "Hidden Network", 14);
           }
           else if(buffer[ssidind + 1] > 0){
-            strncpy(new_node, buffer[ssidind + 2], buffer[ssidind + 1]);
+            memcpy(new_node->ssid, buffer[ssidind + 2], buffer[ssidind] + 1);
           }
           struct s_datall *current = &data[i];
           while(current->next != NULL){
@@ -782,12 +782,12 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
       struct s_datall *current = data[i].next;
       while(current != NULL){
         printf("\t%s\n", current->ssid);
-        current = current->next
+        current = current->next;
       }
     }
   }
   for(int i = 0; i < num_channels; i++){
-    struct s_datall *current = &data[i]->next;
+    struct s_datall *current = data[i].next;
     struct s_datall *next_node = NULL;
     while(current != NULL){
       next_node = current->next;
@@ -1087,7 +1087,7 @@ int main(int argc, char *argv[]){ // Main
     }
     memset(&iwr, 0, sizeof(iwr));
     strncpy(iwr.ifr_ifrn.ifrn_name, args.ifc, IFNAMSIZ);
-    struct iwrange range; // Data from driver
+    struct iw_range range; // Data from driver
     memset(&range, 0, sizeof(range));
     iwr.u.data.pointer = &range;
     iwr.u.data.length = sizeof(range);
