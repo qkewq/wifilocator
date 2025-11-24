@@ -78,6 +78,13 @@ struct s_data{ // Data structure for addr data
   uint8_t empty; // Is struct considered empty
 };
 
+struct s_datall{
+  struct s_datall *next; //Next in linked list
+  char ssid[32]; // SSID
+  int freq; // Associated freq
+  uint8_t active; // Is channel active
+};
+
 const uint8_t channel_nums[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,32,36,40,44,48,52,56,60,64,68,
   72,76,80,84,88,92,96,100,104,108,112,116,120,124,128,132,136,140,144,149,153,157,161,165,169,173,177};
 
@@ -126,6 +133,15 @@ int monitor(int fd, struct iwreq *iwr){ // Enables monitor mode
     return -1;
   }
 
+  return 0;
+}
+
+uint8_t freq_to_channel(int freq){
+  for(int i = 0; i < 51; i++){
+    if(channel_freq[i] == freq){
+      return channel_nums[i]
+    }
+  }
   return 0;
 }
 
@@ -270,6 +286,33 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   return 8 + offset;
 }
 
+int parsessid(uint8_t buffer[2048], int freq, int chind){
+  if(chind == -1 || freq != ((buffer[chind + 1] * 0x100) + buffer[chind])){
+    return -1;
+  }
+  uint16_t headlen;
+  memcpy(&headlen, &buffer[2], 2); // Radiotap header length
+  uint8_t type = buffer[headlen] & 0x0C; // Frame type
+  uint8_t subtype = buffer[headlen] & 0xF0; // Frame subtype
+  if(type != 0x00){
+    return -1;
+  }
+  if(subtype == 0x80 || subtype == 0x50){
+    int ssidind = headlen + 36;
+    while(ssidind < sizeof(buffer)){ // !!!!! POSSIBLE MEMORY SHIT !!!!!
+      switch(ssidind){
+        case 0x00:
+          return ssidind;
+          break;
+        default:
+          ssidind += (buffer[ssidind + 1] + 2)
+          break;
+      }
+    }
+  }
+  return -1;
+}
+
 int bar(int8_t dbm){ // Print bar
   struct winsize ws;
   if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){ // Get window size
@@ -279,7 +322,7 @@ int bar(int8_t dbm){ // Print bar
   int red = (cols - 10) / 3;
   int yel = ((cols - 10) / 3) * 2;
   int grn = cols - 10;
-  int filled = (((cols - 10) * (100 - dbm * -1)) / 100);
+  int filled = (((cols - 10) * (100 - dbm * -1)) / 100); // Convert to percent
   int empty = cols - filled - 10;
   printf("%d dBm [", dbm);
   if(filled <= red){
@@ -596,6 +639,165 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   return 0;
 }
 
+int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw_range *range, int num_channels){ // Scan active channels
+  time_t scantime = 0;
+  struct s_datall data[num_channels];
+  for(int i = 0; i < num_channels; i++){ //Initialize linked lists
+    data[i].next == NULL;
+    memset(&data[i].ssid, 0, 32);
+    data[i].freq = range.freq[i].m;
+    data[i].active = 0;
+  }
+  for(int i = 0; i < num_channels; i++){
+    uint8_t buffer[2048] = {0};
+    if(ioctl(fd, SIOCSIWFREQ, &range.freq[i]) == -1){ // Channel change
+      printf("Channel Error: %s\n", strerror(errno));
+      return -1;
+    }
+    int recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
+    if(recvn == -1){
+      if(errno == EAGAIN || errno == EWOULDBLOCK){
+        continue;
+      }
+      else{
+        printf("Recv Error: %s\n", strerror(errno));
+        return -1;
+      }
+    }
+    else if(recvn > 0){
+      data[i].active = 1;
+    }
+  }
+  for(int i = 0; i < num_channels; i++){
+    int ssidind = 0;
+    int ssidlen = 0;
+    if(data[i].active == 0){
+      continue;
+    }
+    if(ioctl(fd, SIOCSIWFREQ, &range.freq[i]) == -1){ // Channel change
+      printf("Channel Error: %s\n", strerror(errno));
+      return -1;
+    }
+    scantime = time(NULL);
+    while(time(NULL) - scantime < 2){
+      uint8_t buffer[2048] = {0};
+      int recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
+      if(recvn == -1){
+        if(errno == EAGAIN || errno == EWOULDBLOCK){
+          continue;
+        }
+        else{
+          printf("Recv Error: %s\n", strerror(errno));
+          return -1;
+        }
+      }
+      else if(recvn > 0){
+        ssidind = parsessid(buffer, data[i].freq, parsechannel(buffer));
+        if(ssidind <= 0){
+          continue;
+        }
+        else if(ssidind > 0){
+          struct s_datall *new_node = malloc(sizeof(new_node));
+          new_node->active = 0;
+          new_node->freq = 0
+          new_node->next = NULL;
+          if(buffer[ssidind + 1] == 0){
+            strncpy(new_node, "Hidden Network", 14);
+          }
+          else if(buffer[ssidind + 1] > 0){
+            strncpy(new_node, buffer[ssidind + 2], buffer[ssidind + 1]);
+          }
+          struct s_datall *current = &data[i];
+          while(current->next != NULL){
+            current = current->next;
+          }
+          current->next = new_node;
+        }
+      }
+    }
+    printf("%s%s", CLS, HME);
+    printf("Channel %d (%d Mhz): ", freq_to_channel(data[i].freq), data[i].freq);
+    if(data[i].active == 0){
+      printf("%sIn-active%s\n", RED, NRM);
+    }
+    else if(data[i].active == 1){
+      printf("%sActive%s\n", GRN, NRM);
+    }
+    printf("\tSSID:\n");
+    struct s_datall *current = data[i].next;
+    while(current != NULL){
+      printf("\t%s\n", current->ssid);
+      current = current->next
+    }
+  }
+  while(1 == 1){
+    for(int i = 0; i < num_channels; i++){
+      uint8_t buffer[2048] = {0};
+      if(ioctl(fd, SIOCSIWFREQ, &range.freq[i]) == -1){ // Channel change
+        printf("Channel Error: %s\n", strerror(errno));
+        return -1;
+      }
+      int recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
+      if(recvn == -1){
+        if(errno == EAGAIN || errno == EWOULDBLOCK){
+          continue;
+        }
+        else{
+          printf("Recv Error: %s\n", strerror(errno));
+          return -1;
+        }
+      }
+      else if(recvn > 0){
+        int ssidind = parsessid(buffer, data[i].freq, parsechannel(buffer));
+        if(ssidind <= 0){
+          continue;
+        }
+        else if(ssidind > 0){
+          struct s_datall *new_node = malloc(sizeof(new_node));
+          new_node->active = 0;
+          new_node->freq = 0
+          new_node->next = NULL;
+          if(buffer[ssidind + 1] == 0){
+            strncpy(new_node, "Hidden Network", 14);
+          }
+          else if(buffer[ssidind + 1] > 0){
+            strncpy(new_node, buffer[ssidind + 2], buffer[ssidind + 1]);
+          }
+          struct s_datall *current = &data[i];
+          while(current->next != NULL){
+            current = current->next;
+          }
+          current->next = new_node;
+        }
+      }
+      printf("%s%s", CLS, HME);
+      printf("Channel %d (%d Mhz): ", freq_to_channel(data[i].freq), data[i].freq);
+      if(data[i].active == 0){
+        printf("%sIn-active%s\n", RED, NRM);
+      }
+      else if(data[i].active == 1){
+        printf("%sActive%s\n", GRN, NRM);
+      }
+      printf("\tSSID:\n");
+      struct s_datall *current = data[i].next;
+      while(current != NULL){
+        printf("\t%s\n", current->ssid);
+        current = current->next
+      }
+    }
+  }
+  for(int i = 0; i < num_channels; i++){
+    struct s_datall *current = &data[i]->next;
+    struct s_datall *next_node = NULL;
+    while(current != NULL){
+      next_node = current->next;
+      free(current);
+      current = next_node;
+    }
+  }
+  return 0;
+}
+
 int main(int argc, char *argv[]){ // Main
   last_sigint = time(NULL);
   tcgetattr(STDIN_FILENO, &ogattr); // Non-canonical mode
@@ -877,6 +1079,45 @@ int main(int argc, char *argv[]){ // Main
       printf("Exiting\n");
     }
     return 0;
+  }
+
+  if(args.scan == 1){ // Call channel_scan and close
+    if(outops.verbose){
+      printf("Getting available channels\n");
+    }
+    memset(&iwr, 0, sizeof(iwr));
+    strncpy(iwr.ifr_ifrn.ifrn_name, args.ifc, IFNAMSIZ);
+    struct iwrange range; // Data from driver
+    memset(&range, 0, sizeof(range));
+    iwr.u.data.pointer = &range;
+    iwr.u.data.length = sizeof(range);
+    if(ioctl(sockfd, SIOCGIWRANGE, &iwr) == -1){
+      printf("Error: %s\n", strerror(errno));
+      close(sockfd);
+      return 1;
+    }
+    if(range.num_channels <= 0){
+      printf("Channel Error: Zero channels returned\n");
+      close(sockfd);
+      return 1;
+    }
+    if(outops.verbose == 1){
+      printf("Available channels: %d\n", range.num_channels);
+      for(int i = 0; i < range.num_channels; i++){
+        printf("%d Mhz\n", range.freq[i].m);
+      }
+      printf("Enabling non-canonical mode\n"
+      "Entering channel scan mode\n");
+    }
+    printf("%s%s", ALTBUF, HME);
+    tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
+    channel_scan(sockfd, &args, &outops, &range, num_channels);
+    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
+    printf("%s%s", NRM, NRMBUF);
+    close(sockfd);
+    if(outops.verbose == 1){
+      printf("Exiting\n");
+    }
   }
 
   close(sockfd);
