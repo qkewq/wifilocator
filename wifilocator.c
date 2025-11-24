@@ -642,7 +642,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
 
 int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw_range *range){ // Scan active channels
   time_t scantime = 0;
-  uint16_t num_channels = range.num_channels;
+  uint16_t num_channels = range->num_channels;
   struct s_datall data[num_channels];
   for(int i = 0; i < num_channels; i++){ //Initialize linked lists
     data[i].next == NULL;
