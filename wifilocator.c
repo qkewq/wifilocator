@@ -287,7 +287,7 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   return 8 + offset;
 }
 
-int parsessid(uint8_t buffer[2048], int freq, int chind, int recvn){
+int parsessid(uint8_t buffer[4096], int freq, int chind, int recvn){
   if(chind == -1 || freq != ((buffer[chind + 1] * 0x100) + buffer[chind])){
     return -1;
   }
@@ -651,7 +651,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
     data[i].active = 0;
   }
   for(int i = 0; i < num_channels; i++){
-    uint8_t buffer[2048] = {0};
+    uint8_t buffer[4096] = {0};
     if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
       printf("Channel Error: %s\n", strerror(errno));
       return -1;
@@ -682,7 +682,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
     }
     scantime = time(NULL);
     while(time(NULL) - scantime < 2){
-      uint8_t buffer[2048] = {0};
+      uint8_t buffer[4096] = {0};
       int recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
       if(recvn == -1){
         if(errno == EAGAIN || errno == EWOULDBLOCK){
@@ -699,7 +699,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
           continue;
         }
         else if(ssidind > 0){
-          struct s_datall *new_node = malloc(sizeof(new_node));
+          struct s_datall *new_node = malloc(sizeof(struct s_datall));
           new_node->active = 0;
           new_node->freq = 0;
           new_node->next = NULL;
@@ -734,7 +734,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
   }
   while(1 == 1){
     for(int i = 0; i < num_channels; i++){
-      uint8_t buffer[2048] = {0};
+      uint8_t buffer[4096] = {0};
       if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
         printf("Channel Error: %s\n", strerror(errno));
         return -1;
@@ -755,7 +755,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
           continue;
         }
         else if(ssidind > 0){
-          struct s_datall *new_node = malloc(sizeof(new_node));
+          struct s_datall *new_node = malloc(sizeof(struct s_datall));
           new_node->active = 0;
           new_node->freq = 0;
           new_node->next = NULL;
