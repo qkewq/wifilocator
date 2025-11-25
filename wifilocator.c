@@ -710,10 +710,28 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
     }
     else if(recvn > 0){
       int ssidind = parsessid(buffer, range->freq[channel_index].m, parsechannel(buffer), recvn);
+      int chind = parsechannel(buffer);
+      if(chind == -1){
+        continue;
+      }
+      int frequency = ((buffer[chind + 1] * 0x100) + buffer[chind]);
+      int temp_channel_index = 0;
+      for(int i = 0; i < num_channels; i++){
+        switch(range->freq[i].m){
+          case frequency:
+            temp_channel_index = i;
+            break;
+          default:
+            continue;
+        }
+      }
+      if(temp_channel_index <= 0){
+        continue;
+      }
       if(ssidind <= 0){
         continue;
       }
-      struct s_datall *current = data[channel_index].next;
+      struct s_datall *current = data[temp_channel_index].next;
       while(current != NULL){
         if(memcmp(&buffer[ssidind + 2], current->ssid, buffer[ssidind + 1]) == 0){
           continue;
@@ -730,7 +748,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
       else if(buffer[ssidind + 1] > 0){
         memcpy(new_node->ssid, &buffer[ssidind + 2], buffer[ssidind + 1]);
       }
-      current = &data[channel_index];
+      current = &data[temp_channel_index];
       while(current->next != NULL){
         current = current->next;
       }
