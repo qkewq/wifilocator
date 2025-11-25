@@ -660,7 +660,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
     data[i].freq = range->freq[i].m;
     data[i].active = 0;
   }
-  int channel_index = num_channels;
+  int channel_index = 0;
   while(1 == 1){
     uint8_t buffer[4096] = {0};
     printf("%s%s", CLS, HME);
