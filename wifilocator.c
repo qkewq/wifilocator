@@ -244,6 +244,9 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
       present += 4;
     }
   }
+  while(buffer[offset + 8] == 0x00){ // fuck padding
+    offset += 1;
+  }
   if((buffer[4] & 0x20) == 0x00){ // Signal Present
     return -1;
   }
@@ -275,6 +278,9 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
       offset += 4;
       present += 4;
     }
+  }
+  while(buffer[offset + 8] == 0x00){ // fuck padding
+    offset += 1;
   }
   if((buffer[4] & 0x08) == 0x00){ // Channel Present
     return -1;
@@ -904,7 +910,6 @@ int main(int argc, char *argv[]){ // Main
     }
   }
 
-  setvbuf(stdout, NULL, _IONBF, 0);
   if(outops.verbose == 1){
     printf("Starting...\nChecking arguments\n");
   }
