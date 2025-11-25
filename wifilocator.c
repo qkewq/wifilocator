@@ -740,18 +740,20 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
       }
     }
     printf("%s%s", CLS, HME);
-    printf("Channel %d (%d Mhz): ", freq_to_channel(data[i].freq), data[i].freq);
-    if(data[i].active == 0){
-      printf("%sIn-active%s\n", RED, NRM);
-    }
-    else if(data[i].active == 1){
-      printf("%sActive%s\n", GRN, NRM);
-    }
-    printf("\tSSID:\n");
-    struct s_datall *current = data[i].next;
-    while(current != NULL){
-      printf("\t%s\n", current->ssid);
-      current = current->next;
+    for(int k = 0; k < num_channels; k++){
+      printf("Channel %d (%d Mhz): ", freq_to_channel(data[k].freq), data[k].freq);
+      if(data[k].active == 0){
+        printf("%sIn-active%s\n", RED, NRM);
+      }
+      else if(data[k].active == 1){
+        printf("%sActive%s\n", GRN, NRM);
+      }
+      printf("\tSSID:\n");
+      struct s_datall *current = data[k].next;
+      while(current != NULL){
+        printf("\t%s\n", current->ssid);
+        current = current->next;
+      }
     }
   }
   while(1 == 1){
@@ -801,18 +803,20 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
         }
       }
       printf("%s%s", CLS, HME);
-      printf("Channel %d (%d Mhz): ", freq_to_channel(data[i].freq), data[i].freq);
-      if(data[i].active == 0){
-        printf("%sIn-active%s\n", RED, NRM);
-      }
-      else if(data[i].active == 1){
-        printf("%sActive%s\n", GRN, NRM);
-      }
-      printf("\tSSID:\n");
-      struct s_datall *current = data[i].next;
-      while(current != NULL){
-        printf("\t%s\n", current->ssid);
-        current = current->next;
+      for(int k = 0; k < num_channels; k++){
+        printf("Channel %d (%d Mhz): ", freq_to_channel(data[k].freq), data[k].freq);
+        if(data[k].active == 0){
+          printf("%sIn-active%s\n", RED, NRM);
+        }
+        else if(data[k].active == 1){
+          printf("%sActive%s\n", GRN, NRM);
+        }
+        printf("\tSSID:\n");
+        struct s_datall *current = data[k].next;
+        while(current != NULL){
+          printf("\t%s\n", current->ssid);
+          current = current->next;
+        }
       }
     }
   }
