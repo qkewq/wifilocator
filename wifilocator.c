@@ -81,7 +81,7 @@ struct s_data{ // Data structure for addr data
 
 struct s_datall{
   struct s_datall *next; //Next in linked list
-  char ssid[32]; // SSID
+  char ssid[33]; // SSID
   int freq; // Associated freq
   uint8_t active; // Is channel active
 };
@@ -313,6 +313,9 @@ int parsessid(uint8_t buffer[4096], int freq, int chind, int recvn){
     while(ssidind < recvn){ // !!!!! POSSIBLE MEMORY SHIT !!!!!
       switch(ssidind){
         case 0x00:
+          if(buffer[ssidind + 1] > 32){
+            return -1;
+          }
           return ssidind;
           break;
         default:
@@ -656,7 +659,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
   struct s_datall data[num_channels];
   for(int i = 0; i < num_channels; i++){
     data[i].next = NULL;
-    memset(&data[i].ssid, 0, 32);
+    memset(&data[i].ssid, 0, 33);
     data[i].freq = range->freq[i].m;
     data[i].active = 0;
   }
