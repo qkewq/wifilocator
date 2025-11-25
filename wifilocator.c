@@ -650,7 +650,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   return 0;
 }
 
-int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw_range *range){ // Scan active channels
+int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops *outops, struct iw_range *range){ // Scan active channels
   time_t scantime = 0;
   uint16_t num_channels = range->num_channels;
   struct s_datall data[num_channels];
@@ -662,6 +662,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
   }
   for(int i = 0; i < num_channels; i++){
     uint8_t buffer[4096] = {0};
+    strncpy(iwr->ifr_ifrn.ifrn_name, args->ifc, IFNAMSIZ);
     if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
       printf("Channel Error: %s\n", strerror(errno));
       return -1;
@@ -686,6 +687,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
     if(data[i].active == 0){
       continue;
     }
+    strncpy(iwr->ifr_ifrn.ifrn_name, args->ifc, IFNAMSIZ);
     if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
       printf("Channel Error: %s\n", strerror(errno));
       return -1;
@@ -745,6 +747,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
   while(1 == 1){
     for(int i = 0; i < num_channels; i++){
       uint8_t buffer[4096] = {0};
+      strncpy(iwr->ifr_ifrn.ifrn_name, args->ifc, IFNAMSIZ);
       if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
         printf("Channel Error: %s\n", strerror(errno));
         return -1;
@@ -807,6 +810,7 @@ int channel_scan(int fd, struct s_args *args, struct s_outops *outops, struct iw
       current = next_node;
     }
   }
+
   return 0;
 }
 
@@ -1127,7 +1131,7 @@ int main(int argc, char *argv[]){ // Main
     }
     printf("%s%s\n", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
-    channel_scan(sockfd, &args, &outops, &range);
+    channel_scan(sockfd, &iwr, &args, &outops, &range);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     printf("%s%s", NRM, NRMBUF);
     close(sockfd);
