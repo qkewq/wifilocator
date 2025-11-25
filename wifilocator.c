@@ -1059,6 +1059,7 @@ int main(int argc, char *argv[]){ // Main
       "Entering list mode\n");
     }
     printf("%s%s", ALTBUF, HME);
+    fflush(stdout);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     list(sockfd, &sock, &args, &outops);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
@@ -1076,6 +1077,7 @@ int main(int argc, char *argv[]){ // Main
       "Entering locate mode\n");
     }
     printf("%s%s", ALTBUF, HME);
+    fflush(stdout);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     locate(sockfd, &sock, &args, &outops);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
@@ -1116,6 +1118,7 @@ int main(int argc, char *argv[]){ // Main
       "Entering channel scan mode\n");
     }
     printf("%s%s", ALTBUF, HME);
+    fflush(stdout);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     channel_scan(sockfd, &args, &outops, &range);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
