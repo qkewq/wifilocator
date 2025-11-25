@@ -1058,8 +1058,7 @@ int main(int argc, char *argv[]){ // Main
       printf("Enabling non-canonical mode\n"
       "Entering list mode\n");
     }
-    printf("%s%s", ALTBUF, HME);
-    fflush(stdout);
+    printf("%s%s\n", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     list(sockfd, &sock, &args, &outops);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
@@ -1076,8 +1075,7 @@ int main(int argc, char *argv[]){ // Main
       printf("Enabling non-canonical mode\n"
       "Entering locate mode\n");
     }
-    printf("%s%s", ALTBUF, HME);
-    fflush(stdout);
+    printf("%s%s\n", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     locate(sockfd, &sock, &args, &outops);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
@@ -1117,8 +1115,7 @@ int main(int argc, char *argv[]){ // Main
       printf("Enabling non-canonical mode\n"
       "Entering channel scan mode\n");
     }
-    printf("%s%s", ALTBUF, HME);
-    fflush(stdout);
+    printf("%s%s\n", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
     channel_scan(sockfd, &args, &outops, &range);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
