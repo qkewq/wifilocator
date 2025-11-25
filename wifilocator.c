@@ -655,7 +655,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
   uint16_t num_channels = range->num_channels;
   struct s_datall data[num_channels];
   for(int i = 0; i < num_channels; i++){
-    data[i].next == NULL;
+    data[i].next = NULL;
     memset(&data[i].ssid, 0, 32);
     data[i].freq = range->freq[i].m;
     data[i].active = 0;
