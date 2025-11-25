@@ -900,6 +900,7 @@ int main(int argc, char *argv[]){ // Main
     }
   }
 
+  setvbuf(stdout, NULL, _IONBF, 0);
   if(outops.verbose == 1){
     printf("Starting...\nChecking arguments\n");
   }
