@@ -662,8 +662,10 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
   }
   for(int i = 0; i < num_channels; i++){
     uint8_t buffer[4096] = {0};
+    memset(iwr, 0, sizeof(*iwr));
     strncpy(iwr->ifr_ifrn.ifrn_name, args->ifc, IFNAMSIZ);
-    if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
+    memcpy(iwr->u.freq, range->freq[i], sizeof(*range.freq[i]));
+    if(ioctl(fd, SIOCSIWFREQ, iwr) == -1){ // Channel change
       printf("Channel Error: %s\n", strerror(errno));
       return -1;
     }
@@ -687,8 +689,10 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
     if(data[i].active == 0){
       continue;
     }
+    memset(iwr, 0, sizeof(*iwr));
     strncpy(iwr->ifr_ifrn.ifrn_name, args->ifc, IFNAMSIZ);
-    if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
+    memcpy(iwr->u.freq, range->freq[i], sizeof(*range.freq[i]));
+    if(ioctl(fd, SIOCSIWFREQ, iwr) == -1){ // Channel change
       printf("Channel Error: %s\n", strerror(errno));
       return -1;
     }
@@ -747,8 +751,10 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
   while(1 == 1){
     for(int i = 0; i < num_channels; i++){
       uint8_t buffer[4096] = {0};
+      memset(iwr, 0, sizeof(*iwr));
       strncpy(iwr->ifr_ifrn.ifrn_name, args->ifc, IFNAMSIZ);
-      if(ioctl(fd, SIOCSIWFREQ, &range->freq[i]) == -1){ // Channel change
+      memcpy(iwr->u.freq, range->freq[i], sizeof(*range.freq[i]));
+      if(ioctl(fd, SIOCSIWFREQ, iwr) == -1){ // Channel change
         printf("Channel Error: %s\n", strerror(errno));
         return -1;
       }
