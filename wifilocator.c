@@ -650,7 +650,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   return 0;
 }
 
-int channel_scan(in fd, struct iwreq *iwr, struct s_args *args, struct s_outops *s_outops, struct iw_range *range){
+int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops *s_outops, struct iw_range *range){
   time_t scantime = time(NULL);
   uint16_t num_channels = range->num_channels;
   struct s_datall data[num_channels];
@@ -666,7 +666,7 @@ int channel_scan(in fd, struct iwreq *iwr, struct s_args *args, struct s_outops 
     printf("%s%s", CLS, HME);
     for(int i = 0; i < num_channels; i++){
       printf("Channel %d (%d Mhz): ", freq_to_channel(data[i].freq), data[i].freq);
-      if(data.active == 1){
+      if(data[i].active == 1){
         printf("%sActive%s\n", GRN, NRM);
       }
       else{
@@ -712,7 +712,7 @@ int channel_scan(in fd, struct iwreq *iwr, struct s_args *args, struct s_outops 
       }
       struct s_datall *current = data[channel_index].next;
       while(current != NULL){
-        if(memcmp(&buffer[ssidind + 2], current.ssid, buffer[ssidind + 1]) == 0){
+        if(memcmp(&buffer[ssidind + 2], current->ssid, buffer[ssidind + 1]) == 0){
           continue;
         }
         current = current->next;
@@ -735,7 +735,7 @@ int channel_scan(in fd, struct iwreq *iwr, struct s_args *args, struct s_outops 
     }
   }
   for(int i = 0; i < num_channels; i++){
-    struct s_datall *current = &data[i].next;
+    struct s_datall *current = data[i].next;
     data[i].next = NULL;
     while(current != NULL){
       struct s_datall *nextnode = current->next;
