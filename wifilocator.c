@@ -893,7 +893,7 @@ int main(int argc, char *argv[]){ // Main
         args.targ_present = 1;
         continue;
       case 's':
-        args.scan == 1;
+        args.scan = 1;
         continue;
       case 'c':
         args.channel = atoi(optarg);
