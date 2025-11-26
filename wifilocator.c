@@ -298,9 +298,6 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
 }
 
 int parsessid(uint8_t buffer[4096], int recvn){
-  if(chind == -1 || freq != ((buffer[chind + 1] * 0x100) + buffer[chind])){
-    return -1;
-  }
   uint16_t headlen;
   memcpy(&headlen, &buffer[2], 2); // Radiotap header length
   uint8_t type = buffer[headlen] & 0x0C; // Frame type
