@@ -79,3 +79,4 @@ Checklist
 - Add verbosity argument
 - Add scanning for active channels
 - Remake all parsing functions
+- Add proper scrolling
