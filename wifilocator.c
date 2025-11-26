@@ -609,7 +609,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
               break;
             }
           }
-          snprintf(args->targ, 18, "%02X:%02X:%02X:%02X:%02X:%02X:",
+          snprintf(args->targ, 18, "%02X:%02X:%02X:%02X:%02X:%02X",
             data[indselected].addr[0], data[indselected].addr[1],
             data[indselected].addr[2], data[indselected].addr[3],
             data[indselected].addr[4], data[indselected].addr[5]);
@@ -709,29 +709,16 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
       }
     }
     else if(recvn > 0){
-      int ssidind = parsessid(buffer, range->freq[channel_index].m, parsechannel(buffer), recvn);
-      int chind = parsechannel(buffer);
-      if(chind == -1){
+      int ssidind = parsessid(buffer, recvn);
+      int frequency = ((buffer[parsechannel(buffer) + 1] * 0x100) + buffer[parsechannel(buffer)]);
+      if(frequency != data[channel_index].freq){
         continue;
       }
-      int frequency = ((buffer[chind + 1] * 0x100) + buffer[chind]);
-      int temp_channel_index = 0;
-      for(int i = 0; i < num_channels; i++){
-        switch(range->freq[i].m){
-          case frequency:
-            temp_channel_index = i;
-            break;
-          default:
-            continue;
-        }
-      }
-      if(temp_channel_index <= 0){
-        continue;
-      }
+      data[channel_index].active = 1;
       if(ssidind <= 0){
         continue;
       }
-      struct s_datall *current = data[temp_channel_index].next;
+      struct s_datall *current = data[channel_index].next;
       while(current != NULL){
         if(memcmp(&buffer[ssidind + 2], current->ssid, buffer[ssidind + 1]) == 0){
           continue;
@@ -748,7 +735,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
       else if(buffer[ssidind + 1] > 0){
         memcpy(new_node->ssid, &buffer[ssidind + 2], buffer[ssidind + 1]);
       }
-      current = &data[temp_channel_index];
+      current = &data[channel_index];
       while(current->next != NULL){
         current = current->next;
       }
