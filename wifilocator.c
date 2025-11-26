@@ -297,7 +297,7 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
   return 8 + offset;
 }
 
-int parsessid(uint8_t buffer[4096], int freq, int chind, int recvn){
+int parsessid(uint8_t buffer[4096], int recvn){
   if(chind == -1 || freq != ((buffer[chind + 1] * 0x100) + buffer[chind])){
     return -1;
   }
