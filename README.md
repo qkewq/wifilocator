@@ -78,3 +78,4 @@ Checklist
 - Errors should be written to the normal buffer
 - Add verbosity argument
 - Add scanning for active channels
+- Remake all parsing functions
