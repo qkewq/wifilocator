@@ -29,8 +29,6 @@
 #define NRMBUF "\e[?1049l"
 #define UPONE "\e[1F"
 
-// Note: I was very stupid when I started this, 0 is a set bit and 1 is an unset bit :FIXED:
-
 time_t last_sigint = 0; // time() called in first line of main()
 
 struct termios ogattr, stattr; // Set in second line of main()
