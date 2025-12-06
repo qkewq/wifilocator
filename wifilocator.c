@@ -16,6 +16,8 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
+#define OUI_SIZE 20000
+
 #define RED "\e[31m"
 #define YEL "\e[33m"
 #define GRN "\e[32m"
@@ -77,11 +79,17 @@ struct s_data{ // Data structure for addr data
   uint8_t empty; // Is struct considered empty
 };
 
-struct s_datall{
+struct s_datall{ // Struct for linked list nodes
   struct s_datall *next; //Next in linked list
   char ssid[33]; // SSID
   int freq; // Associated freq
   uint8_t active; // Is channel active
+};
+
+struct hm_oui{ // Struct for hashmap nodes
+  struct hm_oui *next; // Pointer to next
+  uint8_t oui[3]; // The OUI of the entry
+  char org[13]; // The assigned organization
 };
 
 const uint8_t channel_nums[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,32,36,40,44,48,52,56,60,64,68,
@@ -90,6 +98,97 @@ const uint8_t channel_nums[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,32,36,40,44,48,
 const uint16_t channel_freq[] = {2412,2417,2422,2427,2432,2437,2442,2447,2452,2457,2462,2467,2472,
   2484,5160,5180,5200,5220,5240,5260,5280,5300,5320,5340,5360,5380,5400,5420,5440,5460,5480,5500,
   5520,5540,5560,5580,5600,5620,5640,5660,5680,5700,5720,5745,5765,5785,5805,5825,5845,5865,5885};
+
+uint32_t mhash(uint8_t *key, size_t len){ // Murmurhash function
+    uint32_t h = 0x9747b28c;
+    uint32_t c1 = 0xcc9e2d51;
+    uint32_t c2 = 0x1b873593;
+
+    while (len >= 4) {
+        uint32_t k = *(uint32_t*)key;
+
+        k *= c1;
+        k = (k << 15) | (k >> 17);
+        k *= c2;
+
+        h ^= k;
+        h = (h << 13) | (h >> 19);
+        h = h * 5 + 0xe6546b64;
+
+        key += 4;
+        len -= 4;
+    }
+
+    uint32_t k = 0;
+    if (len >= 3) k ^= key[2] << 16;
+    if (len >= 2) k ^= key[1] << 8;
+    if (len >= 1) k ^= key[0];
+
+    if (len) {
+        k *= c1;
+        k = (k << 15) | (k >> 17);
+        k *= c2;
+        h ^= k;
+    }
+
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+
+    return h;
+}
+
+struct hm_oui **hm_gen(int verbose){
+  FILE *fdoui = fopen("oui24.txt", "r");
+  struct hm_oui **hm_arr = malloc(OUI_SIZE * sizeof(struct hm_oui *));
+  for(int i = 0; i < OUI_SIZE; i++){
+    hm_arr[i] = NULL;
+  }
+  while(1 == 1){
+    char line[32] = {0};
+    char *ret = fgets(line, sizeof(line), fdoui);
+    if(ret == NULL || line[0] == '\n'){
+      break;
+    }
+    uint8_t oui[3] = {0};
+    char org[13] = {0};
+    int x = 0;
+    for(int i = 0; i < 3; i++){
+      if(line[i + x] >= 65 && line[i + x] <= 90){
+        oui[i] += (line[i + x] - 55) * 16;
+        x++;
+      }
+      else if(line[i + x] >= 48 && line[i + x] <= 57){
+        oui[i] += (line[i + x] - 48) * 16;
+        x++;
+      }
+      if(line[i + x] >= 65 && line[i + x] <= 90){
+        oui[i] += (line[i + x] - 55);
+      }
+      else if(line[i + x] >= 48 && line[i + x] <= 57){
+        oui[i] += (line[i + x] - 48);
+      }
+    }
+    for(int i = 0; i < 13; i++){
+      org[i] = line[i + 6];
+      if(org[i] == '\n'){
+        org[i] = '\0';
+        break;
+      }
+    }
+    int hm_index = mhash(&oui[0], 3) % OUI_SIZE;
+    struct hm_oui *newnode = malloc(sizeof(struct hm_oui));
+    newnode->oui[0] = oui[0];
+    newnode->oui[1] = oui[1];
+    newnode->oui[2] = oui[2];
+    strncpy(newnode->org, org, sizeof(newnode->org));
+    newnode->next = hm_arr[hm_index];
+    hm_arr[hm_index] = newnode;
+  }
+  return hm_arr;
+}
 
 int usage(){ // Usage statement
   printf("\nA tool for locating the source of a wireless signal\n"
@@ -1003,40 +1102,6 @@ int main(int argc, char *argv[]){ // Main
   }
   fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK); // Nonblocking socket
 
-  if(args.list == 1){ // Call list and close
-    if(outops.verbose == 1){
-      printf("Enabling non-canonical mode\n"
-      "Entering list mode\n");
-    }
-    printf("%s%s\n", ALTBUF, HME);
-    tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
-    list(sockfd, &sock, &args, &outops);
-    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
-    printf("%s%s", NRM, NRMBUF);
-    close(sockfd);
-    if(outops.verbose == 1){
-      printf("Exiting\n");
-    }
-    return 0;
-  }
-
-  if(args.targ_present == 1){ // Call locate and close
-    if(outops.verbose == 1){
-      printf("Enabling non-canonical mode\n"
-      "Entering locate mode\n");
-    }
-    printf("%s%s\n", ALTBUF, HME);
-    tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
-    locate(sockfd, &sock, &args, &outops);
-    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
-    printf("%s%s", NRM, NRMBUF);
-    close(sockfd);
-    if(outops.verbose == 1){
-      printf("Exiting\n");
-    }
-    return 0;
-  }
-
   if(args.scan == 1){ // Call channel_scan and close
     if(outops.verbose){
       printf("Getting available channels\n");
@@ -1074,6 +1139,40 @@ int main(int argc, char *argv[]){ // Main
     if(outops.verbose == 1){
       printf("Exiting\n");
     }
+  }
+
+  if(args.list == 1){ // Call list and close
+    if(outops.verbose == 1){
+      printf("Enabling non-canonical mode\n"
+      "Entering list mode\n");
+    }
+    printf("%s%s\n", ALTBUF, HME);
+    tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
+    list(sockfd, &sock, &args, &outops);
+    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
+    printf("%s%s", NRM, NRMBUF);
+    close(sockfd);
+    if(outops.verbose == 1){
+      printf("Exiting\n");
+    }
+    return 0;
+  }
+
+  if(args.targ_present == 1){ // Call locate and close
+    if(outops.verbose == 1){
+      printf("Enabling non-canonical mode\n"
+      "Entering locate mode\n");
+    }
+    printf("%s%s\n", ALTBUF, HME);
+    tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
+    locate(sockfd, &sock, &args, &outops);
+    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
+    printf("%s%s", NRM, NRMBUF);
+    close(sockfd);
+    if(outops.verbose == 1){
+      printf("Exiting\n");
+    }
+    return 0;
   }
 
   close(sockfd);
