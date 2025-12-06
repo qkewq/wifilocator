@@ -211,6 +211,22 @@ int hm_free(struct hm_oui **hm_arr){
   return 0;
 }
 
+char *hm_lookup(uint8_t *p_oui[3]){
+  uint8_t oui[3] = {*p_oui[0], *p_oui[1], *p_oui[2]};
+  int hash = mhash(&oui[0], 3) % OUI_SIZE;
+  struct hm_oui *current = hm_arr[hash];
+  while(current != NULL){
+    if(current->oui[0] == oui[0] || current->oui[1] == oui[1] || current->oui[2] == oui[2]){
+      return &current->next[0];
+      break;
+    }
+    else{
+      current = current->next;
+    }
+  }
+  return NULL;
+}
+
 int usage(){ // Usage statement
   printf("\nA tool for locating the source of a wireless signal\n"
   "or for listing detected transmitting addresses\n\n"
