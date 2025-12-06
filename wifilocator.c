@@ -678,7 +678,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             data[i].frames_recv = 1;
             data[i].last_frame = time(NULL);
             data[i].channel = channel;
-            data[i].org = hm_lookup(addr[0], hm_arr);
+            data[i].org = hm_lookup(&addr[0], hm_arr);
             data[i].empty = 0;
             break;
           }
@@ -1205,7 +1205,7 @@ int main(int argc, char *argv[]){ // Main
     }
     printf("%s%s\n", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
-    list(sockfd, &sock, &args, &outops);
+    list(sockfd, &sock, &args, &outops, hm_arr);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     printf("%s%s", NRM, NRMBUF);
     close(sockfd);
