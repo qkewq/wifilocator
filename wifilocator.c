@@ -77,6 +77,7 @@ struct s_data{ // Data structure for addr data
   int frames_recv; // The number of frames received
   uint8_t channel; // The channel number
   time_t last_frame; // Time of last frame
+  char *org; // Pointer to OUI org
   uint8_t empty; // Is struct considered empty
 };
 
@@ -617,10 +618,12 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   }
   struct s_data data[outops->max_addrs] = {};
   for(int i = 0; i < outops->max_addrs; i++){ // Set initial struct to empty
+    data[i].org = NULL;
     data[i].empty = 1;
   }
   int selected = 1;
   int numaddrs = 0;
+  int change = 1;
   while(1 == 1){ // Main loop
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
@@ -675,12 +678,14 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             data[i].frames_recv = 1;
             data[i].last_frame = time(NULL);
             data[i].channel = channel;
+            data[i].org = hm_lookup(addr[0], hm_arr);
             data[i].empty = 0;
             break;
           }
         }
         numaddrs += 1;
       }
+      change = 1;
     }
     if(outops->no_aging == 0){
       time_t current_time = time(NULL);
@@ -749,6 +754,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           locate(fd, sock, args, outops);
           break;
       }
+      change = 1;
     }
     if(selected > numaddrs){ // Wrap selector
       selected = 1;
@@ -756,48 +762,38 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     else if(selected < 1){ // Wrap selector
       selected = numaddrs;
     }
-    printf("%s", HME); // Move cursor home
-    int inc = 1;
-    for(int i = 0; i < outops->max_addrs; i++){ // Print everything
-      if(data[i].empty == 0){
-        if(selected == inc){
-          printf("%s%s", BLK, WTBCKGRND_HI);
-        }
-        if(outops->no_org == 0){
-          struct hm_oui *s_oui = hm_lookup(&data[i].addr[0], hm_arr);
-          if(s_oui != NULL){
-            printf("%d) %s(%02X:%02X:%02X)%02X:%02X:%02X",
-            inc, s_oui->org, s_oui->oui[0], s_oui->oui[1],
-            s_oui->oui[2], data[i].addr[3], data[i].addr[4],
-            data[i].addr[5]);
+    if(change == 1){
+      printf("%s", HME); // Move cursor home
+      int inc = 1;
+      for(int i = 0; i < outops->max_addrs; i++){ // Print everything
+        if(data[i].empty == 0){
+          if(selected == inc){
+            printf("%s%s", BLK, WTBCKGRND_HI);
           }
-          else{
-            printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
-            inc, data[i].addr[0], data[i].addr[1],
-            data[i].addr[2], data[i].addr[3], data[i].addr[4],
-            data[i].addr[5]);
+          printf("%d) ", inc);
+          if(outops->no_org == 0 && data[i].org != NULL){
+            printf("%s", *data[i].org);
           }
-        }
-        else if(outops->no_org == 1){
-          printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
-          inc, data[i].addr[0], data[i].addr[1],
+          printf("_%02X:%02X:%02X:%02X:%02X:%02X",
+          data[i].addr[0], data[i].addr[1],
           data[i].addr[2], data[i].addr[3], data[i].addr[4],
           data[i].addr[5]);
+          if(outops->no_frame_counter == 0){
+            printf(" %d Frames Received", data[i].frames_recv);
+          }
+          if(outops->no_channel == 0){
+            printf(" Channel %d", data[i].channel);
+          }
+          if(selected == inc){
+            printf("%s", NRM);
+          }
+          printf("\n");
+          inc += 1;
         }
-        if(outops->no_frame_counter == 0){
-          printf(" %d Frames Received", data[i].frames_recv);
-        }
-        if(outops->no_channel == 0){
-          printf(" Channel %d", data[i].channel);
-        }
-        if(selected == inc){
-          printf("%s", NRM);
-        }
-        printf("\n");
-        inc += 1;
       }
+      printf("Use Arrow Keys and Enter to select address\n");
+      change = 0;
     }
-    printf("Use Arrow Keys and Enter to select address\n");
   }
   return 0;
 }
