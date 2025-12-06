@@ -140,10 +140,13 @@ uint32_t mhash(uint8_t *key, size_t len){ // Murmurhash function
     return h;
 }
 
-struct hm_oui **hm_gen(int verbose){
+struct hm_oui **hm_gen(int verbose){ // Generate oui hashmap
+  if(verbose == 1){
+    printf("Opening oui24.txt and creating hashmap\n");
+  }
   FILE *fdoui = fopen("oui24.txt", "r");
-  struct hm_oui **hm_arr = malloc(OUI_SIZE * sizeof(struct hm_oui *));
-  for(int i = 0; i < OUI_SIZE; i++){
+  struct hm_oui **hm_arr = malloc(OUI_SIZE * sizeof(struct hm_oui *)); // Allocate map
+  for(int i = 0; i < OUI_SIZE; i++){ // Set inital array to null pointers
     hm_arr[i] = NULL;
   }
   while(1 == 1){
@@ -155,7 +158,7 @@ struct hm_oui **hm_gen(int verbose){
     uint8_t oui[3] = {0};
     char org[13] = {0};
     int x = 0;
-    for(int i = 0; i < 3; i++){
+    for(int i = 0; i < 3; i++){ // Ascii to hex
       if(line[i + x] >= 65 && line[i + x] <= 90){
         oui[i] += (line[i + x] - 55) * 16;
         x++;
@@ -171,14 +174,14 @@ struct hm_oui **hm_gen(int verbose){
         oui[i] += (line[i + x] - 48);
       }
     }
-    for(int i = 0; i < 13; i++){
+    for(int i = 0; i < 13; i++){ // Grab organization name from file
       org[i] = line[i + 6];
       if(org[i] == '\n'){
         org[i] = '\0';
         break;
       }
     }
-    int hm_index = mhash(&oui[0], 3) % OUI_SIZE;
+    int hm_index = mhash(&oui[0], 3) % OUI_SIZE; // Hash
     struct hm_oui *newnode = malloc(sizeof(struct hm_oui));
     newnode->oui[0] = oui[0];
     newnode->oui[1] = oui[1];
@@ -187,7 +190,25 @@ struct hm_oui **hm_gen(int verbose){
     newnode->next = hm_arr[hm_index];
     hm_arr[hm_index] = newnode;
   }
+  if(verbose == 1){
+    pritnf("Closeing oui24.txt\n");
+  }
+  fclose(fdoui);
   return hm_arr;
+}
+
+int hm_free(struct hm_oui **hm_arr){
+  for(int i = 0; i < OUI_SIZE; i++){
+    struct hm_oui *current = hm_arr[i];
+    struct hm_oui *nextnode = NULL;
+    while(current != NULL){
+      nextnode = current->next;
+      free(current);
+      current = nextnode;
+    }
+  }
+  free(hm_arr);
+  return 0;
 }
 
 int usage(){ // Usage statement
@@ -1102,6 +1123,8 @@ int main(int argc, char *argv[]){ // Main
   }
   fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK); // Nonblocking socket
 
+  struct hm_oui **hm_arr = hm_gen(outops.verbose);
+
   if(args.scan == 1){ // Call channel_scan and close
     if(outops.verbose){
       printf("Getting available channels\n");
@@ -1175,6 +1198,7 @@ int main(int argc, char *argv[]){ // Main
     return 0;
   }
 
+  hm_free(hm_arr);
   close(sockfd);
   return 0;
 }
