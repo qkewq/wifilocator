@@ -67,6 +67,7 @@ struct s_outops{ // Output options
   int no_channel; // Do not display channel
   int no_bar_in_place; // Do not keep dBm bar on one line
   int no_aging; // Do not age out addrs
+  int no_org; // Do not resolve OUI's
   int bssid_only; // Only scan for BSSIDs
   int verbose; // Verbose output
 };
@@ -245,9 +246,9 @@ int usage(){ // Usage statement
   "--maximum-addresses <num>\tThe maximum number of addresses" 
   "to be\n\t\t\t\tlisted by the --list option, defaul 32\n"
   "--no-frame-counter\t\tDo not output frame counters\n"
-  "--no-bar-in-place\t\tOutput dBm bar on consecutive lines\n"
   "--no-aging\t\t\tDo not age out addresses\n"
   "--no-channel\t\t\tDo not display channel\n\n"
+  "--no-org\t\t\tDo not resolve address OUI's\n"
   "Notes:\n"
   "The interface must be in monitor mode to operate\n"
   "If --list and --target are used together, "
@@ -609,7 +610,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
   return 0;
 }
 
-int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // List recved addrs
+int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops, struct hm_oui **hm_arr){ // List recved addrs
   if(outops->max_addrs <= 0){ // Zero max addrs edge case
     printf("Maximum addresses reached\n");
     return -1;
@@ -762,10 +763,27 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         if(selected == inc){
           printf("%s%s", BLK, WTBCKGRND_HI);
         }
-        printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
-        inc, data[i].addr[0], data[i].addr[1],
-        data[i].addr[2], data[i].addr[3], data[i].addr[4],
-        data[i].addr[5]);
+        if(outops->no_org == 0){
+          struct hm_oui *s_oui = hm_lookup(&data[i].addr[0], hm_arr);
+          if(s_oui != NULL){
+            printf("%d) %s(%02X:%02X:%02X)%02X:%02X:%02X",
+            inc, s_oui->org, s_oui->oui[0], s_oui->oui[1],
+            s_oui->oui[2], data[i].addr[3], data[i].addr[4],
+            data[i].addr[5]);
+          }
+          else{
+            printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
+            inc, data[i].addr[0], data[i].addr[1],
+            data[i].addr[2], data[i].addr[3], data[i].addr[4],
+            data[i].addr[5]);
+          }
+        }
+        else if(outops->no_org == 1){
+          printf("%d) %02X:%02X:%02X:%02X:%02X:%02X",
+          inc, data[i].addr[0], data[i].addr[1],
+          data[i].addr[2], data[i].addr[3], data[i].addr[4],
+          data[i].addr[5]);
+        }
         if(outops->no_frame_counter == 0){
           printf(" %d Frames Received", data[i].frames_recv);
         }
@@ -916,6 +934,7 @@ int main(int argc, char *argv[]){ // Main
     {"no-channel", no_argument,0, 0},
     {"no-bar-in-place", no_argument, 0, 0},
     {"no-aging", no_argument, 0, 0},
+    {"no-org", no_argument, 0, 0},
     {"bssid-only", no_argument, 0, 0},
     {0,0,0,0}
   };
@@ -949,6 +968,9 @@ int main(int argc, char *argv[]){ // Main
         }
         else if(strcmp(long_options[option_index].name, "no-aging") == 0){
           outops.no_aging = 1;
+        }
+        else if(strcmp(long_options[option_index].name, "no-org") == 0){
+          outops.no_org = 1;
         }
         else if(strcmp(long_options[option_index].name, "bssid-only") == 0){
           outops.bssid_only = 1;
