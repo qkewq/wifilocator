@@ -178,7 +178,7 @@ struct hm_oui **hm_gen(int verbose){ // Generate oui hashmap
     }
     for(int i = 0; i < 13; i++){ // Grab organization name from file
       org[i] = line[i + 6];
-      if(org[i] == '\n'){
+      if(org[i] == '\n' || org[i] == '\r'){
         org[i] = '\0';
         break;
       }
