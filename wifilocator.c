@@ -72,14 +72,14 @@ struct s_outops{ // Output options
   int verbose; // Verbose output
 };
 
-struct s_data{ // Data structure for addr data
-  uint8_t addr[6]; // The tx address
-  int frames_recv; // The number of frames received
-  uint8_t channel; // The channel number
-  time_t last_frame; // Time of last frame
-  char *org; // Pointer to OUI org
-  uint8_t empty; // Is struct considered empty
-};
+// struct s_data{ // Data structure for addr data
+//   uint8_t addr[6]; // The tx address
+//   int frames_recv; // The number of frames received
+//   uint8_t channel; // The channel number
+//   time_t last_frame; // Time of last frame
+//   char *org; // Pointer to OUI org
+//   uint8_t empty; // Is struct considered empty
+// };
 
 struct ll_list_head{
   struct ll_list *next;
@@ -551,7 +551,7 @@ int bar(int8_t dbm){ // Print bar
   return 0;
 }
 
-int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops){ // Display dBm of tx
+int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops *outops, struct hm_oui **hm_arr){ // Display dBm of tx
   for(int i = 0; i < 17; i++){ // Upper casing MAC addr
     if(args->targ[i] >= 97 && args->targ[i] <= 122){
       args->targ[i] = args->targ[i] - 32;
@@ -581,6 +581,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
   int dbmind = 0;
   int8_t dbm = 0;
   int frames_received = 0;
+  char *org = hm_lookup(&target[0], hm_arr);
   while(1 == 1){
     char l_input = 0;
     int l_readn = read(STDIN_FILENO, &l_input, 1);
@@ -622,7 +623,13 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
       frames_received += 1;
       dbm = buffer[dbmind];
       bar(dbm);
-      printf("Listening for %02X:%02X:%02X:%02X:%02X:%02X",
+      if(outops->no_org == 0){
+        printf("Listening for %s_", org);
+      }
+      else{
+        printf("Listening for ");
+      }
+      printf("%02X:%02X:%02X:%02X:%02X:%02X",
         target[0], target[1], target[2], target[3],
         target[4], target[5]);
       if(outops->no_frame_counter == 0){
@@ -843,7 +850,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             addrselected->addr[2], addrselected->addr[3],
             addrselected->addr[4], addrselected->addr[5]);
           printf("%s%s", CLS, HME);
-          locate(fd, sock, args, outops);
+          locate(fd, sock, args, outops, hm_arr);
           break;
       }
       change = 1;
@@ -1348,7 +1355,7 @@ int main(int argc, char *argv[]){ // Main
     }
     printf("%s%s\n", ALTBUF, HME);
     tcsetattr(STDIN_FILENO, TCSANOW, &stattr);
-    locate(sockfd, &sock, &args, &outops);
+    locate(sockfd, &sock, &args, &outops, hm_arr);
     tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
     printf("%s%s", NRM, NRMBUF);
     close(sockfd);
