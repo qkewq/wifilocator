@@ -720,7 +720,12 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         new_node->org = hm_lookup(&addr[0], hm_arr);
         new_node->next = NULL;
         new_node->prev = head->last;
-        head->last->next = new_node;
+        if(new_node->prev != NULL){
+          new_node->prev->next = new_node;
+        }
+        else{
+          head->next = new_node;
+        }
         head->last = new_node;
         numaddrs += 1;
       }
