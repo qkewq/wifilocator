@@ -249,7 +249,7 @@ int usage(){ // Usage statement
   "--no-frame-counter\t\tDo not output frame counters\n"
   "--no-aging\t\t\tDo not age out addresses\n"
   "--no-channel\t\t\tDo not display channel\n\n"
-  "--no-org\t\t\tDo not resolve address OUI's\n"
+  "--no-org\t\t\tDo not resolve address OUI's\n\n"
   "Notes:\n"
   "The interface must be in monitor mode to operate\n"
   "If --list and --target are used together, "
