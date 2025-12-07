@@ -33,7 +33,7 @@ Output Options:
 --no-frame-counter		      		Do not output frame counters
 --no-aging			            	Do not age out addresses
 --no-channel			          	Do not display channel
-"--no-org							Do not resolve address OUI's
+--no-org							Do not resolve address OUI's
 
 Notes:
 The interface must be in monitor mode to operate
