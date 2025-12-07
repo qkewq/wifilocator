@@ -276,7 +276,7 @@ int usage(){ // Usage statement
   "to be\n\t\t\t\tlisted by the --list option, defaul 32\n"
   "--no-frame-counter\t\tDo not output frame counters\n"
   "--no-aging\t\t\tDo not age out addresses\n"
-  "--no-channel\t\t\tDo not display channel\n\n"
+  "--no-channel\t\t\tDo not display channel\n"
   "--no-org\t\t\tDo not resolve address OUI's\n\n"
   "Notes:\n"
   "The interface must be in monitor mode to operate\n"
@@ -720,7 +720,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           continue;
         }
         struct ll_list *new_node = malloc(sizeof(struct ll_list));
-        memcpy(newnode->addr, addr, 6);
+        memcpy(new_node->addr, addr, 6);
         new_node->frames_recv = 1;
         new_node->last_frame = time(NULL);
         new_node->channel = channel;
