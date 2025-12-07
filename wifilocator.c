@@ -772,7 +772,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           }
           printf("%d) ", inc);
           if(outops->no_org == 0 && data[i].org != NULL){
-            printf("%s", *data[i].org);
+            printf("%s", data[i].org);
           }
           printf("_%02X:%02X:%02X:%02X:%02X:%02X",
           data[i].addr[0], data[i].addr[1],
