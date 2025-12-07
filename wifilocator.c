@@ -81,6 +81,22 @@ struct s_data{ // Data structure for addr data
   uint8_t empty; // Is struct considered empty
 };
 
+struct ll_list_head{
+  struct ll_list *next;
+  struct ll_list *last;
+};
+
+struct ll_list{
+  struct ll_list *next;
+  struct ll_list *prev;
+  uint8_t addr[6];
+  int frames_recv;
+  uint8_t channel;
+  time_t last_frame;
+  char *org;
+  uint8_t empty;
+};
+
 struct s_datall{ // Struct for linked list nodes
   struct s_datall *next; //Next in linked list
   char ssid[33]; // SSID
@@ -227,6 +243,18 @@ char *hm_lookup(uint8_t p_oui[3], struct hm_oui **hm_arr){
     }
   }
   return NULL;
+}
+
+int pop_ll_list(struct ll_list_head *head, struct ll_list *current){
+  current->prev->next = current->next;
+  if(current->next != NULL){
+    current->next->prev = current->prev;
+  }
+  else{
+    head->last = current->prev;
+  }
+  free(current);
+  return 0;
 }
 
 int usage(){ // Usage statement
@@ -616,11 +644,14 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     printf("Maximum addresses reached\n");
     return -1;
   }
-  struct s_data data[outops->max_addrs] = {};
-  for(int i = 0; i < outops->max_addrs; i++){ // Set initial struct to empty
-    data[i].org = NULL;
-    data[i].empty = 1;
-  }
+  // struct s_data data[outops->max_addrs] = {};
+  struct ll_list_head *head = malloc(sizeof(struct ll_list_head));
+  head->next = NULL;
+  head->last = NULL;
+  // for(int i = 0; i < outops->max_addrs; i++){ // Set initial struct to empty
+  //   data[i].org = NULL;
+  //   data[i].empty = 1;
+  // }
   int selected = 1;
   int numaddrs = 0;
   int change = 1;
@@ -658,65 +689,117 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           break;
         }
       }
-      int duplicate = -1;
-      for(int i = 0; i < outops->max_addrs; i++){ // Check if addr is already in data
-        if(memcmp(data[i].addr, addr, 6) == 0 && data[i].empty == 0){
-          duplicate = i;
+      // int duplicate = -1;
+      struct ll_list *duplicate = head->next;
+      while(duplicate != NULL){
+        if(memcmp(duplicate->addr, addr, 6) == 0){
           break;
         }
+        duplicate = duplicate->next;
       }
-      if(duplicate != -1){ // Update frame counter and time
-        data[duplicate].frames_recv += 1;
-        data[duplicate].last_frame = time(NULL);
-        data[duplicate].channel = channel;
-        data[duplicate].empty = 0;
+      // for(int i = 0; i < outops->max_addrs; i++){ // Check if addr is already in data
+      //   if(memcmp(data[i].addr, addr, 6) == 0 && data[i].empty == 0){
+      //     duplicate = i;
+      //     break;
+      //   }
+      // }
+      if(duplicate != NULL){
+        duplicate->frames_recv += 1;
+        duplicate->last_frame = time(NULL);
+        duplicate->channel = channel;
       }
-      else{ // Add new addr to first empty
-        for(int i = 0; i < outops->max_addrs; i++){
-          if(data[i].empty == 1){
-            memcpy(data[i].addr, addr, 6);
-            data[i].frames_recv = 1;
-            data[i].last_frame = time(NULL);
-            data[i].channel = channel;
-            data[i].org = hm_lookup(&addr[0], hm_arr);
-            data[i].empty = 0;
-            break;
-          }
+      else{
+        if(numaddrs > outops->max_addrs){
+          continue;
         }
+        struct ll_list *new_node = malloc(sizeof(struct ll_list));
+        memcpy(newnode->addr, addr, 6);
+        new_node->frames_recv = 1;
+        new_node->last_frame = time(NULL);
+        new_node->channel = channel;
+        new_node->org = hm_lookup(&addr[0], hm_arr);
+        new_node->next = NULL;
+        new_node->prev = head->last;
+        head->last->next = new_node;
+        head->last = new_node;
         numaddrs += 1;
       }
+      // if(duplicate != -1){ // Update frame counter and time
+      //   data[duplicate].frames_recv += 1;
+      //   data[duplicate].last_frame = time(NULL);
+      //   data[duplicate].channel = channel;
+      //   data[duplicate].empty = 0;
+      // }
+      // else{ // Add new addr to first empty
+      //   for(int i = 0; i < outops->max_addrs; i++){
+      //     if(data[i].empty == 1){
+      //       memcpy(data[i].addr, addr, 6);
+      //       data[i].frames_recv = 1;
+      //       data[i].last_frame = time(NULL);
+      //       data[i].channel = channel;
+      //       data[i].org = hm_lookup(&addr[0], hm_arr);
+      //       data[i].empty = 0;
+      //       break;
+      //     }
+      //   }
+      //   numaddrs += 1;
+      // }
       change = 1;
     }
     if(outops->no_aging == 0){
       time_t current_time = time(NULL);
-      for(int i = 0; i < outops->max_addrs; i++){ // Aging out inactive addresses
-        if(data[i].empty == 0){
-          if(current_time - data[i].last_frame <= 5){
-            continue;
+      // for(int i = 0; i < outops->max_addrs; i++){ // Aging out inactive addresses
+      //   if(data[i].empty == 0){
+      //     if(current_time - data[i].last_frame <= 5){
+      //       continue;
+      //     }
+      //     else{ // The chopping block
+      //       if(data[i].frames_recv <= 5){
+      //         data[i].empty = 1;
+      //         numaddrs -= 1;
+      //       }
+      //       else if(data[i].frames_recv <= 100){
+      //         if(current_time - data[i].last_frame >= 30){
+      //           data[i].empty = 1;
+      //           numaddrs -= 1;
+      //         }
+      //       }
+      //       else if(data[i].frames_recv <= 1000){
+      //         if(current_time - data[i].last_frame >= 60){
+      //           data[i].empty = 1;
+      //           numaddrs -= 1;
+      //         }
+      //       }
+      //       else{
+      //         if(current_time - data[i].last_frame >= 180){
+      //           data[i].empty = 1;
+      //           numaddrs -= 1;
+      //         }
+      //       }
+      //     }
+      //   }
+      // }
+      struct ll_list *current = head->next;
+      while(current != NULL){
+        if(current_time - current->last_frame <= 5){
+          continue;
+        }
+        else{
+          if(current->frames_recv <= 5){
+            pop_ll_list(head, current);
+            numaddrs -= 1;
           }
-          else{ // The chopping block
-            if(data[i].frames_recv <= 5){
-              data[i].empty = 1;
-              numaddrs -= 1;
-            }
-            else if(data[i].frames_recv <= 100){
-              if(current_time - data[i].last_frame >= 30){
-                data[i].empty = 1;
-                numaddrs -= 1;
-              }
-            }
-            else if(data[i].frames_recv <= 1000){
-              if(current_time - data[i].last_frame >= 60){
-                data[i].empty = 1;
-                numaddrs -= 1;
-              }
-            }
-            else{
-              if(current_time - data[i].last_frame >= 180){
-                data[i].empty = 1;
-                numaddrs -= 1;
-              }
-            }
+          else if(current->frames_recv <= 100 && current_time - current->last_frame >= 30){
+            pop_ll_list(head, current);
+            numaddrs -= 1;
+          }
+          else if(current->frames_recv <= 1000 && current->last_frame >= 60){
+            pop_ll_list(head, current);
+            numaddrs -= 1;
+          }
+          else if(current_time - current->last_frame >= 180){
+            pop_ll_list(head, current);
+            numaddrs -= 1;
           }
         }
       }
@@ -735,21 +818,25 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       }
       switch(input[0]){ // Locate selected addr
         case 10: // LF
-          int addrselected = 0;
-          int indselected = 0;
-          for(int i = 0; i < numaddrs; i++){
-            if(data[i].empty == 0){
-              addrselected += 1;
-            }
-            if(addrselected == selected){
-              indselected = i;
-              break;
-            }
+          // int addrselected = 0;
+          // int indselected = 0;
+          struct ll_list *addrselected = head->next;
+          for(int i = 1; i != selected; i++){
+            addrselected = addrselected->next;
           }
-          snprintf(args->targ, 18, "%02X:%02X:%02X:%02X:%02X:%02X",
-            data[indselected].addr[0], data[indselected].addr[1],
-            data[indselected].addr[2], data[indselected].addr[3],
-            data[indselected].addr[4], data[indselected].addr[5]);
+          // for(int i = 0; i < numaddrs; i++){
+          //   if(data[i].empty == 0){
+          //     addrselected += 1;
+          //   }
+          //   if(addrselected == selected){
+          //     indselected = i;
+          //     break;
+          //   }
+          // }
+          snprintf(args->targ, 17, "%02X:%02X:%02X:%02X:%02X:%02X",
+            addrselected->addr[0], addrselected->addr[1],
+            addrselected->addr[2], addrselected->addr[3],
+            addrselected->addr[4], addrselected->addr[5]);
           printf("%s%s", CLS, HME);
           locate(fd, sock, args, outops);
           break;
@@ -764,36 +851,70 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     }
     if(change == 1){
       printf("%s", HME); // Move cursor home
+      struct ll_list *current = head->next;
       int inc = 1;
-      for(int i = 0; i < outops->max_addrs; i++){ // Print everything
-        if(data[i].empty == 0){
-          if(selected == inc){
-            printf("%s%s", BLK, WTBCKGRND_HI);
-          }
-          printf("%d) ", inc);
-          if(outops->no_org == 0 && data[i].org != NULL){
-            printf("%s", data[i].org);
-          }
-          printf("_%02X:%02X:%02X:%02X:%02X:%02X",
-          data[i].addr[0], data[i].addr[1],
-          data[i].addr[2], data[i].addr[3], data[i].addr[4],
-          data[i].addr[5]);
-          if(outops->no_frame_counter == 0){
-            printf(" %d Frames Received", data[i].frames_recv);
-          }
-          if(outops->no_channel == 0){
-            printf(" Channel %d", data[i].channel);
-          }
-          if(selected == inc){
-            printf("%s", NRM);
-          }
-          printf("\n");
-          inc += 1;
+      while(current != NULL){
+        if(selected == inc){
+          printf("%s%S", BLK, WTBCKGRND_HI);
         }
+        printf("%d) ", inc);
+        if(outops->no_org == 0 && current->org != NULL){
+          printf("%s_", current->org);
+        }
+        printf("%02X:%02X:%02X:%02X:%02X:%02X",
+        current->addr[0], current->addr[1], current->addr[2], 
+        current->addr[3], current->addr[4], current->addr[5]); 
+        if(outops->no_frame_counter == 0){
+          printf(" %d Frames Received", current->frames_recv);
+        }
+        if(outops->no_channel == 0){
+          printf(" Channel %d", current->channel);
+        }
+        if(selected == inc){
+          printf("%s", NRM);
+        }
+        printf("\n");
+        inc += 1;
       }
+      // int inc = 1;
+      // for(int i = 0; i < outops->max_addrs; i++){ // Print everything
+      //   if(data[i].empty == 0){
+      //     if(selected == inc){
+      //       printf("%s%s", BLK, WTBCKGRND_HI);
+      //     }
+      //     printf("%d) ", inc);
+      //     if(outops->no_org == 0 && data[i].org != NULL){
+      //       printf("%s", data[i].org);
+      //     }
+      //     printf("_%02X:%02X:%02X:%02X:%02X:%02X",
+      //     data[i].addr[0], data[i].addr[1],
+      //     data[i].addr[2], data[i].addr[3], data[i].addr[4],
+      //     data[i].addr[5]);
+      //     if(outops->no_frame_counter == 0){
+      //       printf(" %d Frames Received", data[i].frames_recv);
+      //     }
+      //     if(outops->no_channel == 0){
+      //       printf(" Channel %d", data[i].channel);
+      //     }
+      //     if(selected == inc){
+      //       printf("%s", NRM);
+      //     }
+      //     printf("\n");
+      //     inc += 1;
+      //   }
+      // }
       printf("Use Arrow Keys and Enter to select address\n");
       change = 0;
     }
+  }
+  struct ll_list *current = head->next;
+  head->next = NULL;
+  head->last = NULL;
+  free(head);
+  while(current != NULL){
+    struct ll_list *next_node = current->next;
+    free(current);
+    current = next_node;
   }
   return 0;
 }
