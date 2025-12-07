@@ -31,9 +31,9 @@ Output Options:
 --maximum-addresses <num>	  		The maximum number of addresses to be
 				                    listed by the --list option, default 32
 --no-frame-counter		      		Do not output frame counters
---no-bar-in-place		        	Output dBm bar on consecutive lines
 --no-aging			            	Do not age out addresses
 --no-channel			          	Do not display channel
+"--no-org							Do not resolve address OUI's
 
 Notes:
 The interface must be in monitor mode to operate
