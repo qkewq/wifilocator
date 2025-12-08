@@ -797,6 +797,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           continue;
         }
         else{ // The chopping block
+          struct ll_list *next = current->next;
           if(current->frames_recv <= 5){
             pop_ll_list(head, current); // 5 seconds inactive less than 5 frames
             numaddrs -= 1;
@@ -813,7 +814,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             pop_ll_list(head, current); // 3 minutes inactive regardless of frames
             numaddrs -= 1;
           }
-          current->next;
+          current = next;
         }
       }
       printf("%s", CLS);
