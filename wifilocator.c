@@ -793,6 +793,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       struct ll_list *current = head->next;
       while(current != NULL){ // Agin out inactive addresses
         if(current_time - current->last_frame <= 5){ // 5 second grace period
+          current = current->next;
           continue;
         }
         else{ // The chopping block
@@ -812,6 +813,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             pop_ll_list(head, current); // 3 minutes inactive regardless of frames
             numaddrs -= 1;
           }
+          current->next;
         }
       }
       printf("%s", CLS);
