@@ -72,15 +72,6 @@ struct s_outops{ // Output options
   int verbose; // Verbose output
 };
 
-// struct s_data{ // Data structure for addr data
-//   uint8_t addr[6]; // The tx address
-//   int frames_recv; // The number of frames received
-//   uint8_t channel; // The channel number
-//   time_t last_frame; // Time of last frame
-//   char *org; // Pointer to OUI org
-//   uint8_t empty; // Is struct considered empty
-// };
-
 struct ll_list_head{ // Head for linked list in list function
   struct ll_list *next; // Pointer to first node
   struct ll_list *last; // pointer to last node
@@ -655,14 +646,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     printf("Maximum addresses reached\n");
     return -1;
   }
-  // struct s_data data[outops->max_addrs] = {};
   struct ll_list_head *head = malloc(sizeof(struct ll_list_head)); // Head of linked list
   head->next = NULL;
   head->last = NULL;
-  // for(int i = 0; i < outops->max_addrs; i++){ // Set initial struct to empty
-  //   data[i].org = NULL;
-  //   data[i].empty = 1;
-  // }
   int selected = 1;
   int numaddrs = 0;
   int change = 1;
@@ -700,7 +686,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
           break;
         }
       }
-      // int duplicate = -1;
       struct ll_list *duplicate = head->next;
       while(duplicate != NULL){
         if(memcmp(duplicate->addr, addr, 6) == 0){
@@ -708,12 +693,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         }
         duplicate = duplicate->next;
       }
-      // for(int i = 0; i < outops->max_addrs; i++){ // Check if addr is already in data
-      //   if(memcmp(data[i].addr, addr, 6) == 0 && data[i].empty == 0){
-      //     duplicate = i;
-      //     break;
-      //   }
-      // }
       if(duplicate != NULL){ // Chack if addr is already in list
         duplicate->frames_recv += 1;
         duplicate->last_frame = time(NULL);
@@ -740,61 +719,10 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         head->last = new_node;
         numaddrs += 1;
       }
-      // if(duplicate != -1){ // Update frame counter and time
-      //   data[duplicate].frames_recv += 1;
-      //   data[duplicate].last_frame = time(NULL);
-      //   data[duplicate].channel = channel;
-      //   data[duplicate].empty = 0;
-      // }
-      // else{ // Add new addr to first empty
-      //   for(int i = 0; i < outops->max_addrs; i++){
-      //     if(data[i].empty == 1){
-      //       memcpy(data[i].addr, addr, 6);
-      //       data[i].frames_recv = 1;
-      //       data[i].last_frame = time(NULL);
-      //       data[i].channel = channel;
-      //       data[i].org = hm_lookup(&addr[0], hm_arr);
-      //       data[i].empty = 0;
-      //       break;
-      //     }
-      //   }
-      //   numaddrs += 1;
-      // }
       change = 1;
     }
     if(outops->no_aging == 0){
       time_t current_time = time(NULL);
-      // for(int i = 0; i < outops->max_addrs; i++){ // Aging out inactive addresses
-      //   if(data[i].empty == 0){
-      //     if(current_time - data[i].last_frame <= 5){
-      //       continue;
-      //     }
-      //     else{ // The chopping block
-      //       if(data[i].frames_recv <= 5){
-      //         data[i].empty = 1;
-      //         numaddrs -= 1;
-      //       }
-      //       else if(data[i].frames_recv <= 100){
-      //         if(current_time - data[i].last_frame >= 30){
-      //           data[i].empty = 1;
-      //           numaddrs -= 1;
-      //         }
-      //       }
-      //       else if(data[i].frames_recv <= 1000){
-      //         if(current_time - data[i].last_frame >= 60){
-      //           data[i].empty = 1;
-      //           numaddrs -= 1;
-      //         }
-      //       }
-      //       else{
-      //         if(current_time - data[i].last_frame >= 180){
-      //           data[i].empty = 1;
-      //           numaddrs -= 1;
-      //         }
-      //       }
-      //     }
-      //   }
-      // }
       struct ll_list *current = head->next;
       while(current != NULL){ // Agin out inactive addresses
         if(current_time - current->last_frame <= 5){ // 5 second grace period
@@ -837,21 +765,10 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
       }
       switch(input[0]){ // Locate selected addr
         case 10: // LF
-          // int addrselected = 0;
-          // int indselected = 0;
           struct ll_list *addrselected = head->next;
           for(int i = 1; i != selected; i++){
             addrselected = addrselected->next;
           }
-          // for(int i = 0; i < numaddrs; i++){
-          //   if(data[i].empty == 0){
-          //     addrselected += 1;
-          //   }
-          //   if(addrselected == selected){
-          //     indselected = i;
-          //     break;
-          //   }
-          // }
           snprintf(args->targ, 17, "%02X:%02X:%02X:%02X:%02X:%02X",
             addrselected->addr[0], addrselected->addr[1],
             addrselected->addr[2], addrselected->addr[3],
@@ -896,33 +813,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         inc += 1;
         current = current->next;
       }
-      // int inc = 1;
-      // for(int i = 0; i < outops->max_addrs; i++){ // Print everything
-      //   if(data[i].empty == 0){
-      //     if(selected == inc){
-      //       printf("%s%s", BLK, WTBCKGRND_HI);
-      //     }
-      //     printf("%d) ", inc);
-      //     if(outops->no_org == 0 && data[i].org != NULL){
-      //       printf("%s", data[i].org);
-      //     }
-      //     printf("_%02X:%02X:%02X:%02X:%02X:%02X",
-      //     data[i].addr[0], data[i].addr[1],
-      //     data[i].addr[2], data[i].addr[3], data[i].addr[4],
-      //     data[i].addr[5]);
-      //     if(outops->no_frame_counter == 0){
-      //       printf(" %d Frames Received", data[i].frames_recv);
-      //     }
-      //     if(outops->no_channel == 0){
-      //       printf(" Channel %d", data[i].channel);
-      //     }
-      //     if(selected == inc){
-      //       printf("%s", NRM);
-      //     }
-      //     printf("\n");
-      //     inc += 1;
-      //   }
-      // }
       printf("Use Arrow Keys and Enter to select address\n");
       change = 0;
     }
@@ -979,9 +869,6 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
     else if(recvn > 0){
       int ssidind = parsessid(buffer, recvn);
       int frequency = ((buffer[parsechannel(buffer) + 1] * 0x100) + buffer[parsechannel(buffer)]);
-      // if(frequency != data[channel_index].freq){
-      //   continue;
-      // }
       if(ssidind <= 0){
         continue;
       }
@@ -1037,108 +924,6 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
   }
   return 0;
 }
-
-// int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops *s_outops, struct iw_range *range){ // Scan channels
-//   time_t scantime = time(NULL);
-//   uint16_t num_channels = range->num_channels;
-//   struct ll_scan data[num_channels];
-//   for(int i = 0; i < num_channels; i++){
-//     data[i].next = NULL;
-//     memset(&data[i].ssid, 0, 33);
-//     data[i].freq = range->freq[i].m;
-//     data[i].active = 0;
-//   }
-//   int channel_index = 0;
-//   while(1 == 1){
-//     uint8_t buffer[4096] = {0};
-//     printf("%s%s", CLS, HME);
-//     for(int i = 0; i < num_channels; i++){
-//       printf("Channel %d (%d Mhz): ", freq_to_channel(data[i].freq), data[i].freq);
-//       if(data[i].active == 1){
-//         printf("%sActive%s\n", GRN, NRM);
-//       }
-//       else{
-//         printf("%sIn-active%s\n", RED, NRM);
-//       }
-//       printf("\tSSID:\n");
-//       struct ll_scan *current = data[i].next;
-//       while(current != NULL){
-//         printf("\t%s\n", current->ssid);
-//         current = current->next;
-//       }
-//     }
-//     if(time(NULL) - scantime > 1){
-//       channel_index += 1;
-//       if(channel_index >= num_channels){
-//         channel_index = 0;
-//       }
-//     }
-//     memset(iwr, 0, sizeof(*iwr));
-//     strncpy(iwr->ifr_ifrn.ifrn_name, args->ifc, IFNAMSIZ);
-//     iwr->u.freq.m = range->freq[channel_index].m;
-//     iwr->u.freq.e = 6;
-//     iwr->u.freq.i = 0;
-//     iwr->u.freq.flags = 0;
-//     if(ioctl(fd, SIOCSIWFREQ, iwr) == -1){ // Channel change
-//       printf("Channel Error: %s\n", strerror(errno));
-//       return -1;
-//     }
-//     int recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
-//     if(recvn == -1){
-//       if(errno == EAGAIN || errno == EWOULDBLOCK){
-//         continue;
-//       }
-//       else{
-//         printf("Recv Error: %s\n", strerror(errno));
-//         return -1;
-//       }
-//     }
-//     else if(recvn > 0){
-//       int ssidind = parsessid(buffer, recvn);
-//       int frequency = ((buffer[parsechannel(buffer) + 1] * 0x100) + buffer[parsechannel(buffer)]);
-//       if(frequency != data[channel_index].freq){
-//         continue;
-//       }
-//       data[channel_index].active = 1;
-//       if(ssidind <= 0){
-//         continue;
-//       }
-//       struct ll_scan *current = data[channel_index].next;
-//       while(current != NULL){
-//         if(memcmp(&buffer[ssidind + 2], current->ssid, buffer[ssidind + 1]) == 0){
-//           continue;
-//         }
-//         current = current->next;
-//       }
-//       struct ll_scan *new_node = malloc(sizeof(struct ll_scan));
-//       new_node->active = 0;
-//       new_node->freq = 0;
-//       new_node->next = NULL;
-//       if(buffer[ssidind + 1] == 0){
-//         memcpy(new_node->ssid, "Hidden Network\0", 15);
-//       }
-//       else if(buffer[ssidind + 1] > 0){
-//         memcpy(new_node->ssid, &buffer[ssidind + 2], buffer[ssidind + 1]);
-//       }
-//       current = &data[channel_index];
-//       while(current->next != NULL){
-//         current = current->next;
-//       }
-//       current->next = new_node;
-//     }
-//   }
-//   for(int i = 0; i < num_channels; i++){
-//     struct ll_scan *current = data[i].next;
-//     data[i].next = NULL;
-//     while(current != NULL){
-//       struct ll_scan *nextnode = current->next;
-//       free(current);
-//       current = nextnode;
-//     }
-//   }
-
-//   return 0;
-// }
 
 int main(int argc, char *argv[]){ // Main
   last_sigint = time(NULL);
