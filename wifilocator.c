@@ -972,9 +972,9 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
     else if(recvn > 0){
       int ssidind = parsessid(buffer, recvn);
       int frequency = ((buffer[parsechannel(buffer) + 1] * 0x100) + buffer[parsechannel(buffer)]);
-      if(frequency != data[channel_index].freq){
-        continue;
-      }
+      // if(frequency != data[channel_index].freq){
+      //   continue;
+      // }
       if(ssidind <= 0){
         continue;
       }
