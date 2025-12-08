@@ -888,6 +888,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         }
         printf("\n");
         inc += 1;
+        current = current->next;
       }
       // int inc = 1;
       // for(int i = 0; i < outops->max_addrs; i++){ // Print everything
@@ -979,11 +980,16 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
         continue;
       }
       struct ll_scan *current = heads[channel_index];
+      int duplicate = 0;
       while(current != NULL){
         if(memcmp(&buffer[ssidind + 2], current->ssid, buffer[ssidind + 1]) == 0){
-          continue;
+          duplciate = 1;
+          break;
         }
         current = current->next;
+      }
+      if(duplicate == 1){
+        continue;
       }
       struct ll_scan *new_node = malloc(sizeof(struct ll_scan));
       new_node->active = 1;
