@@ -32,19 +32,18 @@
 #define UPONE "\e[1F"
 
 time_t last_sigint = 0; // time() called in first line of main()
+volatile sig_atomic_t sigint_set = 0; // Was ctrl C pressed
 
 struct termios ogattr, stattr; // Set in second line of main()
 
 static void sigint_handler(int signum){ // Handle ctrl C "properly"
   time_t sigint_time = time(NULL);
   if(sigint_time - last_sigint <= 3){ // Less than 3 seconds
-    write(STDOUT_FILENO, "\033[0m\033[?1049l", 12);
-    tcsetattr(STDIN_FILENO, TCSANOW, &ogattr);
-    _exit(0);
+    sigint_set = 2;
   }
   else{
     last_sigint = sigint_time;
-    write(STDOUT_FILENO, "Press ctrl + C again to quit...\n", 32);
+    sigint_set = 1;
   }
 }
 
@@ -578,6 +577,9 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
   int frames_received = 0;
   char *org = hm_lookup(&target[0], hm_arr);
   while(1 == 1){
+    if(sigint_set == 2){
+      return 0;
+    }
     char l_input = 0;
     int l_readn = read(STDIN_FILENO, &l_input, 1);
     if(l_readn > 0){
@@ -634,6 +636,12 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
         printf(" on channel %d", args->channel);
       }
       printf(" | Press 'q' to return...");
+      if(sigint_set == 1){
+        printf(" Press ctrl + C again to quit");
+        if(time(NULL) - last_sigint > 3){
+          sigint_set = 0;
+        }
+      }
       printf("\n%s", UPONE);
     }
   }
@@ -653,6 +661,9 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
   int numaddrs = 0;
   int change = 1;
   while(1 == 1){ // Main loop
+    if(sigint_set == 2){
+      return 0;
+    }
     uint8_t buffer[4096] = {0};
     uint8_t addr[6] = {0};
     uint16_t freq = 0;
@@ -814,6 +825,12 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         current = current->next;
       }
       printf("Use Arrow Keys and Enter to select address\n");
+      if(sigint_set == 1){
+        printf(" Press ctrl + C again to quit\n");
+        if(time(NULL) - last_sigint > 3){
+          sigint_set = 0;
+        }
+      }
       change = 0;
     }
   }
@@ -838,6 +855,9 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
   }
   int channel_index = 0;
   while(1 == 1){
+    if(sigint_set == 2){
+      return 0;
+    }
     if(time(NULL) - scantime > 1){
       channel_index += 1;
       if(channel_index >= num_channels){
@@ -911,6 +931,12 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
         while(current != NULL){
           printf("\t%s\n", current->ssid);
         }
+      }
+    }
+    if(sigint_set == 2){
+      printf(" Press ctrl + C again to quit\n");
+      if(time(NULL) - last_sigint > 3){
+        sigint_set = 0;
       }
     }
   }
