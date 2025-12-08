@@ -245,7 +245,12 @@ char *hm_lookup(uint8_t p_oui[3], struct hm_oui **hm_arr){ // Resolve oui to org
 }
 
 int pop_ll_list(struct ll_list_head *head, struct ll_list *current){ // Delete node from list linked list
-  current->prev->next = current->next;
+  if(current->prev != NULL){
+    current->prev->next = current->next;
+  }
+  else{
+    head->next = current->next;
+  }
   if(current->next != NULL){
     current->next->prev = current->prev;
   }
@@ -984,7 +989,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
       int duplicate = 0;
       while(current != NULL){
         if(memcmp(&buffer[ssidind + 2], current->ssid, buffer[ssidind + 1]) == 0){
-          duplciate = 1;
+          duplicate = 1;
           break;
         }
         current = current->next;
