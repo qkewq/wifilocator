@@ -17,6 +17,8 @@
 #include <signal.h>
 
 #define OUI_SIZE 20000
+#define BUF_SIZE 4096
+#define DEFAULT_MAX_ADDR 32
 
 #define RED "\e[31m"
 #define YEL "\e[33m"
@@ -312,7 +314,7 @@ uint8_t freq_to_channel(int freq){ // Turn frequency into channel number
     return 0;
 }
 
-int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset in the frame
+int parseaddr(uint8_t buffer[BUF_SIZE], int bssid_only){ // Get the tx addr offset in the frame
     // Fuck 802.11 addressing
     uint16_t headlen;
     memcpy(&headlen, &buffer[2], 2); // Radiotap header length
@@ -399,7 +401,7 @@ int parseaddr(uint8_t buffer[4096], int bssid_only){ // Get the tx addr offset i
     return -1;
 }
 
-int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
+int parsedbm(uint8_t buffer[BUF_SIZE]){ // Get the dbm offset in the frame
     // Checking for flags and adjusting the offset
     int offset = 0;
     int present = 0;
@@ -437,7 +439,7 @@ int parsedbm(uint8_t buffer[4096]){ // Get the dbm offset in the frame
     return 8 + offset;
 }
 
-int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
+int parsechannel(uint8_t buffer[BUF_SIZE]){ // Get channel offset in frame
     int offset = 0;
     int present = 0;
     while(1 == 1){ // Multiple flag fields
@@ -468,7 +470,7 @@ int parsechannel(uint8_t buffer[4096]){ // Get channel offset in frame
     return 8 + offset;
 }
 
-int parsessid(uint8_t buffer[4096], int recvn){ // Get the ssid offset in frame
+int parsessid(uint8_t buffer[BUF_SIZE], int recvn){ // Get the ssid offset in frame
     uint16_t headlen;
     memcpy(&headlen, &buffer[2], 2); // Radiotap header length
     uint8_t type = buffer[headlen] & 0x0C; // Frame type
@@ -609,7 +611,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
             }
         }
 
-        uint8_t buffer[4096] = {0};
+        uint8_t buffer[BUF_SIZE] = {0};
         uint8_t addr[6] = {0};
         int l_recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
         if(l_recvn == -1){
@@ -685,7 +687,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         if(sigint_set == 2){
             return 0;
         }
-        uint8_t buffer[4096] = {0};
+        uint8_t buffer[BUF_SIZE] = {0};
         uint8_t addr[6] = {0};
         uint16_t freq = 0;
         int recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
@@ -907,7 +909,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
             scantime = time(NULL);
         }
 
-        uint8_t buffer[4096] = {0};
+        uint8_t buffer[BUF_SIZE] = {0};
         int recvn = recvfrom(fd, buffer, sizeof(buffer), 0, NULL, NULL); // Recv
         if(recvn == -1){
             if(errno == EAGAIN || errno == EWOULDBLOCK){
@@ -1026,7 +1028,7 @@ int main(int argc, char *argv[]){ // Main
 
     struct s_outops outops; // Initialize outops with default values
     memset(&outops, 0, sizeof(outops));
-    outops.max_addrs = 32;
+    outops.max_addrs = DEFAULT_MAX_ADDR;
     struct s_args args; // Initialize args with default values
     memset(&args, 0, sizeof(args));
     args.channel = -1;
@@ -1152,7 +1154,7 @@ int main(int argc, char *argv[]){ // Main
         }
     }
 
-    if(args.list == 0 && args.targ_present == 0 && args.scan == 0){ // Exit if done
+    if(args.list == 0 && args.targ_present == 0 && args.scan == 0 && args.channel == -1){ // Exit if done
         if(outops.verbose == 1){
             printf("Exiting\n");
         }
