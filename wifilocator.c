@@ -482,7 +482,7 @@ int parsessid(uint8_t buffer[BUF_SIZE], int recvn){ // Get the ssid offset in fr
     if(subtype == 0x80 || subtype == 0x50){
         int ssidind = headlen + 36;
         while(ssidind < recvn){ // !!!!! POSSIBLE MEMORY SHIT !!!!!
-            switch(ssidind){
+            switch(buffer[ssidind]){
                 case 0x00:
                     if(buffer[ssidind + 1] > 32){
                         return -1;
