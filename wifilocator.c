@@ -977,6 +977,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
                 printf("%sActive%s\n\tSSID:\n", GRN, NRM);
                 while(current != NULL){
                     printf("\t%s\n", current->ssid);
+                    current = current->next;
                 }
             }
         }
