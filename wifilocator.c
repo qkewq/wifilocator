@@ -951,6 +951,11 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
                 memcpy(new_node->ssid, &buffer[ssidind + 2], buffer[ssidind + 1]);
                 new_node->ssid[buffer[ssidind + 1]] = '\0';
             }
+            current = heads[channel_index];
+            while(current->next != NULL){
+                current = current->next;
+            }
+            current->next = new_node;
         }
 
         printf("%s%s", CLS, HME);
