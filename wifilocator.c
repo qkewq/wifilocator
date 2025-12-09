@@ -952,10 +952,15 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
                 new_node->ssid[buffer[ssidind + 1]] = '\0';
             }
             current = heads[channel_index];
-            while(current->next != NULL){
-                current = current->next;
+            if(current == NULL){
+                heads[channel_index] = new_node;
             }
-            current->next = new_node;
+            else{
+                while(current->next != NULL){
+                    current = current->next;
+                }
+                current->next = new_node;
+            }
         }
 
         printf("%s%s", CLS, HME);
