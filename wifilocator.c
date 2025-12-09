@@ -19,6 +19,8 @@
 #define OUI_SIZE 20000
 #define BUF_SIZE 4096
 #define DEFAULT_MAX_ADDR 32
+#define GRACE_TIME 5
+#define SCAN_TIME 0
 
 #define RED "\e[31m"
 #define YEL "\e[33m"
@@ -763,7 +765,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             time_t current_time = time(NULL);
             struct ll_list *current = head->next;
             while(current != NULL){ // Agin out inactive addresses
-                if(current_time - current->last_frame <= 5){ // 5 second grace period
+                if(current_time - current->last_frame <= GRACE_TIME){ // 5 second grace period
                     current = current->next;
                     continue;
                 }
@@ -891,7 +893,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
             return 0;
         }
 
-        if(time(NULL) - scantime > 1){
+        if(time(NULL) - scantime > SCAN_TIME){
             channel_index += 1;
             if(channel_index >= num_channels){
                 channel_index = 0;
