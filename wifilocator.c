@@ -21,6 +21,10 @@
 #define DEFAULT_MAX_ADDR 32
 #define GRACE_TIME 5
 #define SCAN_TIME 0
+#define SIGINT_NO_SIG 0
+#define SIGINT_FIRST_TAP 1
+#define SIGINT_DOUBLE_TAP 2
+#define SIGINT_WAIT_TIME 3
 
 #define RED "\e[31m"
 #define YEL "\e[33m"
@@ -42,12 +46,12 @@ struct termios ogattr, stattr; // Set in second line of main()
 
 static void sigint_handler(int signum){ // Handle ctrl C "properly"
     time_t sigint_time = time(NULL);
-    if(sigint_time - last_sigint <= 3){ // Less than 3 seconds
-        sigint_set = 2;
+    if(sigint_time - last_sigint <= SIGINT_WAIT_TIME){ // Less than 3 seconds
+        sigint_set = SIGINT_DOUBLE_TAP;
     }
     else{
         last_sigint = sigint_time;
-        sigint_set = 1;
+        sigint_set = SIGINT_FIRST_TAP;
     }
 }
 
@@ -599,7 +603,7 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
     int frames_received = 0;
     char *org = hm_lookup(&target[0], hm_arr);
     while(1 == 1){
-        if(sigint_set == 2){
+        if(sigint_set == SIGINT_DOUBLE_TAP){
             return 0;
         }
         char l_input = 0;
@@ -660,10 +664,10 @@ int locate(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outop
                 printf(" on channel %d", args->channel);
             }
             printf(" | Press 'q' to return...");
-            if(sigint_set == 1){
+            if(sigint_set == SIGINT_FIRST_TAP){
                 printf(" Press ctrl + C again to quit");
-                if(time(NULL) - last_sigint > 3){
-                    sigint_set = 0;
+                if(time(NULL) - last_sigint > SIGINT_WAIT_TIME){
+                    sigint_set = SIGINT_NO_SIG;
                 }
             }
             printf("\n%s", UPONE);
@@ -686,7 +690,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     int numaddrs = 0;
     int change = 1;
     while(1 == 1){ // Main loop
-        if(sigint_set == 2){
+        if(sigint_set == SIGINT_DOUBLE_TAP){
             return 0;
         }
         uint8_t buffer[BUF_SIZE] = {0};
@@ -790,6 +794,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
                     current = next;
                 }
             }
+            change = 1;
             printf("%s", CLS);
         }
 
@@ -833,7 +838,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             int inc = 1;
             while(current != NULL){
                 if(selected == inc){
-                    printf("%s%S", BLK, WTBCKGRND_HI);
+                    printf("%s%s", BLK, WTBCKGRND_HI);
                 }
                 printf("%d) ", inc);
                 if(outops->no_org == 0 && current->org != NULL){
@@ -856,10 +861,10 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
                 current = current->next;
             }
             printf("Use Arrow Keys and Enter to select address\n");
-            if(sigint_set == 1){
+            if(sigint_set == SIGINT_FIRST_TAP){
                 printf(" Press ctrl + C again to quit\n");
-                if(time(NULL) - last_sigint > 3){
-                    sigint_set = 0;
+                if(time(NULL) - last_sigint > SIGINT_WAIT_TIME){
+                    sigint_set = SIGINT_NO_SIG;
                 }
             }
             change = 0;
@@ -889,7 +894,7 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
 
     int channel_index = 0;
     while(1 == 1){
-        if(sigint_set == 2){
+        if(sigint_set == SIGINT_DOUBLE_TAP){
             return 0;
         }
 
@@ -983,10 +988,10 @@ int channel_scan(int fd, struct iwreq *iwr, struct s_args *args, struct s_outops
                 }
             }
         }
-        if(sigint_set == 2){
+        if(sigint_set == SIGINT_FIRST_TAP){
             printf(" Press ctrl + C again to quit\n");
-            if(time(NULL) - last_sigint > 3){
-                sigint_set = 0;
+            if(time(NULL) - last_sigint > SIGINT_WAIT_TIME){
+                sigint_set = SIGINT_NO_SIG;
             }
         }
     }
