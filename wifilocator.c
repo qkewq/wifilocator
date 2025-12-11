@@ -538,7 +538,7 @@ int list_age_out(struct ll_list_head *head){ // Age out inactive transmitters
     return addrs_removed;
 }
 
-int list_print(struct ll_list *head, int selected, int start){
+int list_print(struct ll_list_head *head, struct s_outops *outops, int selected, int start){
     struct winsize ws;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws); // Get window size
     int rows = ws.ws_row;
@@ -894,7 +894,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         }
 
         if(change == 1){ // Print everything
-            start = list_print(head, selected, start);
+            start = list_print(head, selected, outops, start);
             change = 0;
         }
     }
