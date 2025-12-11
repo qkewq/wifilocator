@@ -543,12 +543,13 @@ int list_print(struct ll_list_head *head, struct s_outops *outops, int selected,
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws); // Get window size
     int rows = ws.ws_row;
 
-    while(selected < start){
-        start -= 1;
+    if(selected < start){
+        start = selected;
     }
-    while(selected > start + rows){
-        start += 1;
+    else if(selected > start + rows){
+        start = selected - rows;
     }
+
     printf("%s%s", HME, CLS); // Move cursor home & cls
     struct ll_list *current = head->next;
     int inc = 1;
@@ -587,7 +588,7 @@ int list_print(struct ll_list_head *head, struct s_outops *outops, int selected,
         }
     }
 
-    return 0;
+    return start;
 }
 
 int bar(int8_t dbm){ // Print bar
