@@ -894,7 +894,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
         }
 
         if(change == 1){ // Print everything
-            start = list_print(head, selected, outops, start);
+            start = list_print(head, outops, selected, start);
             change = 0;
         }
     }
