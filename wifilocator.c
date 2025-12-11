@@ -300,9 +300,23 @@ int usage(){ // Usage statement
     return 0;
 }
 
-int monitor(int fd, struct iwreq *iwr){ // Enables monitor mode
+int monitor(int fd, struct iwreq *iwr, struct ifreq *ifr){ // Enables monitor mode
+    if(ioctl(fd, SIOCGIFFLAGS, ifr) == -1){
+        printf("Monitor Error: %s\n", strerror(errno));
+        return -1;
+    }
+    ifr->ifr_flags &= ~IFF_UP;
+    if(ioctl(fd, SIOCSIFFLAGS, ifr) == -1){
+        printf("Monitor Error: %s\n", strerror(errno));
+        return -1;
+    }
     iwr->u.mode = IW_MODE_MONITOR;
     if(ioctl(fd, SIOCSIWMODE, iwr) == -1){
+        printf("Monitor Error: %s\n", strerror(errno));
+        return -1;
+    }
+    ifr->ifr_flags |= IFF_UP;
+    if(ioctl(fd, SIOCSIFFLAGS, ifr) == -1){
         printf("Monitor Error: %s\n", strerror(errno));
         return -1;
     }
@@ -1192,7 +1206,7 @@ int main(int argc, char *argv[]){ // Main
         if(outops.verbose == 1){
             printf("Attempting to set monitor mode on %s\n", args.ifc);
         }
-        if(monitor(sockfd, &iwr) == -1){
+        if(monitor(sockfd, &iwr, &ifr) == -1){
             close(sockfd);
             return 1;
         }
