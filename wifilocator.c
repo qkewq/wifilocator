@@ -505,6 +505,91 @@ int parsessid(uint8_t buffer[BUF_SIZE], int recvn){ // Get the ssid offset in fr
     return -1;
 }
 
+int list_age_out(struct ll_list_head *head){ // Age out inactive transmitters
+    time_t current_time = time(NULL);
+    struct ll_list *current = head->next;
+    int addrs_removed = 0;
+    while(current != NULL){ // Agin out inactive addresses
+        if(current_time - current->last_frame <= GRACE_TIME){ // 5 second grace period
+            current = current->next;
+            continue;
+        }
+        else{ // The chopping block
+            struct ll_list *next = current->next;
+            if(current->frames_recv <= 5){
+                pop_ll_list(head, current); // 5 seconds inactive less than 5 frames
+                addrs_removed += 1;
+            }
+            else if(current->frames_recv <= 100 && current_time - current->last_frame >= 30){
+                pop_ll_list(head, current); // 30 seconds inactive less than 100 frames
+                addrs_removed += 1;
+            }
+            else if(current->frames_recv <= 1000 && current_time - current->last_frame >= 60){
+                pop_ll_list(head, current); // 6 seconds inactive less than 1000 frames
+                addrs_removed += 1;
+            }
+            else if(current_time - current->last_frame >= 180){
+                pop_ll_list(head, current); // 3 minutes inactive regardless of frames
+                addrs_removed += 1;
+            }
+            current = next;
+        }
+    }
+    return addrs_removed;
+}
+
+int list_print(struct ll_list *head, int selected, int start){
+    struct winsize ws;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws); // Get window size
+    int rows = ws.ws_row;
+
+    while(selected < start){
+        start -= 1;
+    }
+    while(selected > start + rows){
+        start += 1;
+    }
+    printf("%s%s", HME, CLS); // Move cursor home & cls
+    struct ll_list *current = head->next;
+    int inc = 1;
+    while(current != NULL && inc < start + rows){
+        if(inc < start){
+            continue;
+        }
+        if(selected == inc){
+            printf("%s%s", BLK, WTBCKGRND_HI);
+        }
+        printf("%d) ", inc);
+        if(outops->no_org == 0 && current->org != NULL){
+            printf("%s_", current->org);
+        }
+        printf("%02X:%02X:%02X:%02X:%02X:%02X",
+        current->addr[0], current->addr[1], current->addr[2], 
+        current->addr[3], current->addr[4], current->addr[5]); 
+        if(outops->no_frame_counter == 0){
+            printf(" %d Frames Received", current->frames_recv);
+        }
+        if(outops->no_channel == 0){
+            printf(" Channel %d", current->channel);
+        }
+        if(selected == inc){
+            printf("%s", NRM);
+        }
+        printf("\n");
+        inc += 1;
+        current = current->next;
+    }
+    printf("Use Arrow Keys and Enter to select address\n");
+    if(sigint_set == SIGINT_FIRST_TAP){
+        printf("Press ctrl + C again to quit\n");
+        if(time(NULL) - last_sigint > SIGINT_WAIT_TIME){
+            sigint_set = SIGINT_NO_SIG;
+        }
+    }
+
+    return 0;
+}
+
 int bar(int8_t dbm){ // Print bar
     struct winsize ws;
     if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){ // Get window size
@@ -689,6 +774,7 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
     int selected = 1;
     int numaddrs = 0;
     int change = 1;
+    int start = 1;
     while(1 == 1){ // Main loop
         if(sigint_set == SIGINT_DOUBLE_TAP){
             return 0;
@@ -765,39 +851,6 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             change = 1;
         }
 
-        if(outops->no_aging == 0){
-            time_t current_time = time(NULL);
-            struct ll_list *current = head->next;
-            while(current != NULL){ // Agin out inactive addresses
-                if(current_time - current->last_frame <= GRACE_TIME){ // 5 second grace period
-                    current = current->next;
-                    continue;
-                }
-                else{ // The chopping block
-                    struct ll_list *next = current->next;
-                    if(current->frames_recv <= 5){
-                        pop_ll_list(head, current); // 5 seconds inactive less than 5 frames
-                        numaddrs -= 1;
-                    }
-                    else if(current->frames_recv <= 100 && current_time - current->last_frame >= 30){
-                        pop_ll_list(head, current); // 30 seconds inactive less than 100 frames
-                        numaddrs -= 1;
-                    }
-                    else if(current->frames_recv <= 1000 && current_time - current->last_frame >= 60){
-                        pop_ll_list(head, current); // 6 seconds inactive less than 1000 frames
-                        numaddrs -= 1;
-                    }
-                    else if(current_time - current->last_frame >= 180){
-                        pop_ll_list(head, current); // 3 minutes inactive regardless of frames
-                        numaddrs -= 1;
-                    }
-                    current = next;
-                }
-            }
-            change = 1;
-            printf("%s", CLS);
-        }
-
         char input[3] = {0};
         int readn = read(STDIN_FILENO, &input, 3); // Reading user input
         if(readn > 0){ // Moving selector up or down
@@ -832,41 +885,16 @@ int list(int fd, struct sockaddr_ll *sock, struct s_args *args, struct s_outops 
             selected = numaddrs;
         }
 
+        if(outops->no_aging == 0){ // Age out inactive addrs
+            int addrs_removed = list_age_out(head);
+            if(addrs_removed > 0){
+                change = 1;
+            }
+            numaddrs -= addrs_removed;
+        }
+
         if(change == 1){ // Print everything
-            printf("%s", HME); // Move cursor home
-            struct ll_list *current = head->next;
-            int inc = 1;
-            while(current != NULL){
-                if(selected == inc){
-                    printf("%s%s", BLK, WTBCKGRND_HI);
-                }
-                printf("%d) ", inc);
-                if(outops->no_org == 0 && current->org != NULL){
-                    printf("%s_", current->org);
-                }
-                printf("%02X:%02X:%02X:%02X:%02X:%02X",
-                current->addr[0], current->addr[1], current->addr[2], 
-                current->addr[3], current->addr[4], current->addr[5]); 
-                if(outops->no_frame_counter == 0){
-                    printf(" %d Frames Received", current->frames_recv);
-                }
-                if(outops->no_channel == 0){
-                    printf(" Channel %d", current->channel);
-                }
-                if(selected == inc){
-                    printf("%s", NRM);
-                }
-                printf("\n");
-                inc += 1;
-                current = current->next;
-            }
-            printf("Use Arrow Keys and Enter to select address\n");
-            if(sigint_set == SIGINT_FIRST_TAP){
-                printf(" Press ctrl + C again to quit\n");
-                if(time(NULL) - last_sigint > SIGINT_WAIT_TIME){
-                    sigint_set = SIGINT_NO_SIG;
-                }
-            }
+            start = list_print(head, selected, start);
             change = 0;
         }
     }
