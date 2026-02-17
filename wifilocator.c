@@ -335,7 +335,6 @@ uint8_t freq_to_channel(int freq){ // Turn frequency into channel number
 }
 
 int parseaddr(uint8_t buffer[BUF_SIZE], int bssid_only){ // Get the tx addr offset in the frame
-    // Fuck 802.11 addressing
     uint16_t headlen;
     memcpy(&headlen, &buffer[2], 2); // Radiotap header length
     uint8_t type = buffer[headlen] & 0x0C; // Frame type
@@ -434,7 +433,7 @@ int parsedbm(uint8_t buffer[BUF_SIZE]){ // Get the dbm offset in the frame
         }
     }
 
-    while(buffer[offset + 8] == 0x00){ // fuck padding
+    while(buffer[offset + 8] == 0x00){ // padding
         offset += 1;
     }
     if((buffer[4] & 0x20) == 0x00){ // Signal Present
@@ -471,7 +470,7 @@ int parsechannel(uint8_t buffer[BUF_SIZE]){ // Get channel offset in frame
         }
     }
 
-    while(buffer[offset + 8] == 0x00){ // fuck padding
+    while(buffer[offset + 8] == 0x00){ // padding
         offset += 1;
     }
     if((buffer[4] & 0x08) == 0x00){ // Channel Present
@@ -501,7 +500,7 @@ int parsessid(uint8_t buffer[BUF_SIZE], int recvn){ // Get the ssid offset in fr
 
     if(subtype == 0x80 || subtype == 0x50){
         int ssidind = headlen + 36;
-        while(ssidind < recvn){ // !!!!! POSSIBLE MEMORY SHIT !!!!!
+        while(ssidind < recvn){
             switch(buffer[ssidind]){
                 case 0x00:
                     if(buffer[ssidind + 1] > 32){
@@ -569,6 +568,8 @@ int list_print(struct ll_list_head *head, struct s_outops *outops, int selected,
     int inc = 1;
     while(current != NULL && inc < start + rows){
         if(inc < start){
+            inc++;
+            current = current->next;
             continue;
         }
         if(selected == inc){
@@ -591,7 +592,7 @@ int list_print(struct ll_list_head *head, struct s_outops *outops, int selected,
             printf("%s", NRM);
         }
         printf("\n");
-        inc += 1;
+        inc ++;
         current = current->next;
     }
     printf("Use Arrow Keys and Enter to select address\n");
