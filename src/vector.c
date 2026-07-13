@@ -119,3 +119,12 @@ int vecoptimize(Vector *vector){
 
 	return 1;
 }
+
+void vecfree(Vector *vector){
+	if(!vector){
+		return;
+	}
+
+	free(vector->data);
+	free(vector);
+}

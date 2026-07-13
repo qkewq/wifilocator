@@ -2,10 +2,10 @@
 #define VECTOR_H
 
 typedef struct Vector{
-	size_t unitsize;
-	size_t capacity;
-	size_t used;
-	void *data;
+	size_t unitsize;    // Size of each index
+	size_t capacity;    // Number of indexes
+	size_t used;        // Current used
+	void *data;         // The vector array
 } Vector;
 
 Vector *vecinit(size_t count, size_t size);

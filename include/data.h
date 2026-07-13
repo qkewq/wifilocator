@@ -19,7 +19,6 @@ typedef struct Channels{
 /* ---- DEVICES ---- */
 
 typedef struct Device{
-	struct Device *next;
 	uint8_t mac[6];
 	char *org;
 	uint8_t isbssid;
@@ -31,8 +30,7 @@ typedef struct Device{
 
 typedef struct Devices{
 	pthread_mutex_t lock;
-	size_t number_nodes;
-	struct Device *head;
+	struct Vector *device;
 } Devices;
 
 /* ---- NETWORKS ---- */

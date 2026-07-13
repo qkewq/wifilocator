@@ -20,6 +20,8 @@ void scanner_th(void *t_arg){
 	time_t channel_time = time(NULL);
 	ssize_t frame_size;
 	uint8_t buffer[BUFFERSIZE];
+	Radiotap rtp;
+	uint16_t frame_control;
 
 	int readyfd = 0;
 	struct pollfd pfd = {0};
@@ -45,6 +47,12 @@ void scanner_th(void *t_arg){
 			// handle fatal error
 		}
 
+		if(!radiotap(buffer, &rtp)){
+			continue;
+		}
+
+		frame_control = (buffer[rtp.header_len] << 8) + buffer[rtp.header_len + 1];
+		if(frame_control & )// and with non tx addr frame types all at once
 		// parse
 		// lock
 		// write

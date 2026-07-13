@@ -11,6 +11,7 @@
 #include "data.h"
 #include "setup.h"
 #include "ouimap.h"
+#include "vector.h"
 
 #define SSIDMAPSIZE 40
 
@@ -173,7 +174,7 @@ int builddata(int fd, char *if_name, Channels *channels, Ouimap *ouimap, Scanner
 	}
 
 	scannerdata->fd = fd;
-	strncpy(scannerdata, if_name, IFNAMSIZ);
+	strncpy(scannerdata->if_name, if_name, IFNAMSIZ);
 	scannerdata->channels = channels;
 	scannerdata->ouimap = ouimap;
 
@@ -183,6 +184,13 @@ int builddata(int fd, char *if_name, Channels *channels, Ouimap *ouimap, Scanner
 		return -1;
 	}
 	scannerdata->networks.map.mapsize = SSIDMAPSIZE;
+
+	scannerdata->devices.device = vecinit(16, sizeof(Device));
+	if(!scannerdata->devices.device){
+		free(scannerdata);
+		free(scannerdata->networks.map.map);
+		return -1;
+	}
 
 	pthread_mutex_init(scannerdata->channels->lock);
 	pthread_mutex_init(scannerdata->devices.lock);
