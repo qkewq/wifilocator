@@ -1,19 +1,15 @@
 #ifndef DATA_H
 #define DATA_H
 
-/* ---- CHANNELS ---- */
+#include <linux/wireless.h> // For struct iw_freq
 
-typedef struct Channel{
-	struct Channel *next;
-//	struct Channel *prev;
-	struct iwfreq freq;
-} Channel;
+/* ---- CHANNELS ---- */
 
 typedef struct Channels{
 	pthread_mutex_t lock;
 	size_t number_nodes;
-	struct Channel *head; // Circle linked list
-	struct Channel *current;
+	size_t current_index;
+	struct iw_freq channels[IW_MAX_FREQUENCIES];
 } Channels;
 
 /* ---- DEVICES ---- */

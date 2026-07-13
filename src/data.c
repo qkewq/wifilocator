@@ -2,11 +2,10 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <linux/wireless.h>
 #include <sys/ioctl.h>
-#include <net/if.h>
-#include <unistd.h.>
+#include <unistd.h>
 #include <pthread.h>
+// <linux/wireless.h> included in header
 
 #include "data.h"
 #include "setup.h"
@@ -37,35 +36,18 @@ void channel_free(Channels *channel_head){
 }
 
 int inchannel(int freq, Channels *channel_head){
-	if(!channel_head->head){
-		return 0;
-	}
-	if(channel_head->head.freq.m == freq){
-		return 1;
-	}
-
-	Channel *current = channel_head->head;
-	while(current != channel_head->head){
-		if(current->freq.m == freq){
+	for(int i = 0; i < channel_head->number_nodes; i++){
+		if(channel_head->channels[i].m == freq){
 			return 1;
 		}
-		current = current->next;
 	}
 
 	return 0;
 }
 
-int addChannel(Channels *channel_head, Channel *new_node){
-	if(!channel_head->head){
-		channel_head->head = new_node;
-		channel_head->current = new_node;
-		new_node->next = new_node;
-	}
-	else{
-		channel_head->current->next = new_node;
-		channel_head->current = new_node;
-		new_node->next = head;
-	}
+// int addChannel(Channels *channel_head, Channel *new_node){
+int addChannel(Channels *channel_head, struct iw_freq *freq){
+	memcpy(channel_head->channels[number_nodes], freq, sizeof(struct iw_freq));
 	channel_head->number_nodes++;
 
 	return 0;
@@ -74,12 +56,7 @@ int addChannel(Channels *channel_head, Channel *new_node){
 int addnodesinrange(int lb, int ub, Channels *channel_head, iw_range *range){
 	for(int i = 0; i < range->num_channels; i++){
 		if(range->freq[i].m >= lb && range->freq[i].m <= ub){
-			Channel *new_node = calloc(1, sizeof(Channel));
-			if(!new_node){
-				return -1;
-			}
-			memcpy(new_node->freq, range->freq[i], sizeof(struct iw_freq));
-			addChannel(channel_head, new_node);
+			addChannel(channel_head, &range->freq);
 		}
 	}
 
@@ -102,15 +79,9 @@ int buildChannels(Arguments *args, int fd, Channels **ret){
 			free(channel_head);
 			return -1;
 		}
-		Channel *new_node = calloc(1, sizeof(Channel));
-		if(!new_node){
-			free(channel_head);
-			return -1;
-		}
-		memcpy(channel->freq, iwr.u.freq, sizeof(struct iw_freq));
-		addChannel(channel_head, new_node);
-		channel_head->current = channel_head->head;
+		addChannel(channel_head, &iwr.u.freq);
 		ret = channel_head;
+
 		return 0;
 	}
 
@@ -124,16 +95,10 @@ int buildChannels(Arguments *args, int fd, Channels **ret){
 
 	if(args->band){
 		if(args->band == band2g || args->band == bandall){
-			if(addnodesinrange(2412, 2484, channel_head, &range) == -1){
-				channel_free(channel_head);
-				return -1;
-			}
+			addnodesinrange(2412, 2484, channel_head, &range);
 		}
 		if(args->band == band5g || args->band == bandall){
-			if(addnodesinrange(5160, 5885, channel_head, &range) == -1){
-				channel_free(channel_head);
-				return -1;
-			}
+			addnodesinrange(5160, 5885, channel_head, &range);
 		}
 	}
 
@@ -144,13 +109,7 @@ int buildChannels(Arguments *args, int fd, Channels **ret){
 					break;
 				}
 				else{
-					Channel *new_node = calloc(1, sizeof(Channel));
-					if(!new_node){
-						channel_free(channel_head);
-						return -1;
-					}
-					memcpy(new_node->freq, range.freq[i], sizeof(struct iw_freq));
-					addChannel(channel_head, newnode);
+					addChannel(channel_head, &range.freq[i]);
 					break;
 				}
 			}
@@ -162,7 +121,8 @@ int buildChannels(Arguments *args, int fd, Channels **ret){
 		return -1;
 	}
 
-	channel_head->current = channel_head->head;
+	channel_head->current_index = 0;
+
 	ret = channel_head;
 	return 0;
 }

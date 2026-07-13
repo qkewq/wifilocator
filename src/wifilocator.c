@@ -56,7 +56,7 @@ int main(int argc, char *argv){
 		}
 	}
 
-	Channels * channels = NULL;
+	Channels *channels = NULL;
 	if(buildChannels(args, fd, &channels) == -1){
 		printf("Failed to build channels list\n");
 		close(fd);

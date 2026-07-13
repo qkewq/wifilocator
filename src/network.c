@@ -105,17 +105,20 @@ int setchannel(int fd, char *if_name, Channels *channels){
 	pthread_mutex_lock(channels->lock);
 
 	if(channels->number_nodes == 1){
+		pthread_mutex_unlock(channels->lock);
 		return 0;
 	}
 
 	struct iwreq iwr = {0};
 	strncpy(iwr.ifr_ifrn.ifrn_name, if_name, IFNAMSIZ);
-	memcpy(iwr.u.freq, channels->current->freq, sizeof(struct iw_freq));
+	channels->current_index = (channels->current_index + 1 ) % channels->number_nodes;
+	memcpy(iwr.u.freq, channels->channels[channels->current_index], sizeof(struct iw_freq));
 
 	if(ioctl(fd, SIOCSIWFREQ, &iwr) == -1){
+		pthread_mutex_unlock(channels->lock);
 		return -1;
 	}
-	channels->current = channels->current->next;
+
 	pthread_mutex_unlock(channels->lock);
 
 	return 0;
