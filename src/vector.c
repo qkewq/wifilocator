@@ -128,3 +128,12 @@ void vecfree(Vector *vector){
 	free(vector->data);
 	free(vector);
 }
+
+void vecfree_custom(Vector *vector, void(*custom)(void *)){
+	size_t offset = 0;
+	for(int i = 0; i < vector->used; i++){
+		custom((char *)vector->data + offset);
+		offset += vector->unitsize;
+	}
+	vecfree(vector);
+}

@@ -14,5 +14,6 @@ int vecinsert(Vector *vector, void *data, size_t index);
 int vecremove(Vector *vector, size_t index);
 int vecoptimize(Vector *vector);
 void vecfree(Vector *vector);
+void vecfree_custom(Vector *vector, void(*custom)(void *));
 
 #endif
