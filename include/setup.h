@@ -1,6 +1,8 @@
 #ifndef SETUP_H
 #define SETUP_H
 
+#include <linux/wireless.h> // For struct iw_freq
+
 #define ARGSTRING "hmi:b:c:"
 
 typedef enum Bands{

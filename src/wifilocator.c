@@ -2,18 +2,20 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "ouimap.h"
 #include "setup.h"
 #include "network.h"
 #include "data.h"
 #include "setup.h"
+#include "scanner.h"
 
 void usage(){
 	printf("");
 }
 
-int main(int argc, char *argv){
+int main(int argc, char **argv){
 
 	Arguments args = {0};
 	if(getargs(&args, argc, argv) == -1){ // Prints some error messages
@@ -57,7 +59,7 @@ int main(int argc, char *argv){
 	}
 
 	Channels *channels = NULL;
-	if(buildChannels(args, fd, &channels) == -1){
+	if(buildChannels(&args, fd, &channels) == -1){
 		printf("Failed to build channels list\n");
 		close(fd);
 		return 1;
@@ -71,14 +73,14 @@ int main(int argc, char *argv){
 	}
 
 	Scannerdata *scannerdata = NULL;
-	if(builddata(fd, args.if_name, channels, ouimap, scannerdata) == -1){
+	if(builddata(fd, args.if_name, channels, ouimap, &scannerdata) == -1){
 		printf("Failed to prepare data structures\n"); // Out of memory
 		return 1;
 	}
 
 
 	pthread_t scanner;
-	if(pthread_create(&scanner, NULL, &scanner_th, scannerdata) != 0){
+	if(pthread_create(&scanner, NULL, scanner_th, scannerdata) != 0){
 		printf("Failed to start scanner thread\n");
 		return 1;
 	}

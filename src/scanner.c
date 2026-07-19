@@ -13,15 +13,20 @@
 #include "scanner.h"
 #include "data.h"
 #include "network.h"
+#include "vector.h"
 
-void scanner_th(void *t_arg){
+#define TXOFFSET 0x0A
+#define ADDRLEN  0x06
+
+void *scanner_th(void *t_arg){
 	Scannerdata *data = t_arg;
 
 	time_t channel_time = time(NULL);
 	ssize_t frame_size;
 	uint8_t buffer[BUFFERSIZE];
 	Radiotap rtp;
-	uint16_t frame_control;
+	Device *existing = NULL;
+	int addroffset;
 
 	int readyfd = 0;
 	struct pollfd pfd = {0};
@@ -34,7 +39,7 @@ void scanner_th(void *t_arg){
 			// handle fatal error
 		}
 
-		if(!readyfd || channel_time > time(NULL) - POLLTIMEOUT_S){
+		if(!readyfd || channel_time < time(NULL) - POLLTIMEOUT_S){
 			if(setchannel(data->fd, data->if_name, data->channels) == -1){
 				// handle fatal error
 			}
@@ -50,12 +55,44 @@ void scanner_th(void *t_arg){
 		if(!radiotap(buffer, &rtp)){
 			continue;
 		}
+		if(!txpresent(buffer[rtp.header_len])){
+			continue;
+		}
 
-		frame_control = (buffer[rtp.header_len] << 8) + buffer[rtp.header_len + 1];
-		if(frame_control & )// and with non tx addr frame types all at once
-		// parse
-		// lock
-		// write
-		// unlock
+		addroffset = rtp.header_len + TXOFFSET;
+		// Reading struct without lock because this should be the only
+		// writer thread.  Somehow remember to change this if that changes:)
+		existing = (Device *)veccmp(data->devices.device,
+									&buffer[addroffset],
+									ADDRLEN,
+									offsetof(Addrworg, mac) + offsetof(Device, addr)
+								);
+
+		if(!existing){
+			Device new_device = {0};
+			makeaddrworg(&new_device, &buffer[addroffset], data->ouimap);
+			new_device.num_frames++;
+			new_device.last_frame = time(NULL);
+			new_device.isbssid = isdevbssid(&buffer[rtp.header_len]);
+			new_device.channel = freqtochannel(rtp.freq);
+			new_device.last_dbm = rtp.dbm;
+			pthread_mutex_lock(&data->devices.lock);
+			if(!vecappend(data->devices.device, &new_device)){
+				// out of memory
+			}
+			pthread_mutex_unlock(&data->devices.lock);
+		}
+		else{
+			pthread_mutex_lock(&data->devices.lock);
+			existing->num_frames++;
+			existing->last_frame = time(NULL);
+			existing->last_dbm = rtp.dbm;
+			if(existing->isbssid == -1){
+				existing->isbssid = isdevbssid(&buffer[rtp.header_len]);
+			}
+			pthread_mutex_unlock(&data->devices.lock);
+		}
+
+
 	}
 }

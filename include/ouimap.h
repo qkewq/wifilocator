@@ -18,7 +18,7 @@ typedef struct Ouimap{
 
 
 Ouimap *ouimapgen(size_t mapsize, char *filepath);
-char *ouilookup(Ouimap *map, uint8_t oui[3]);
+char *ouilookup(Ouimap *map, uint8_t *oui);
 void ouifree(Ouimap *map);
 
 #endif

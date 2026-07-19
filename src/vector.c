@@ -87,7 +87,7 @@ void *veccmp(Vector *vector, void *cmp, size_t size, size_t offset){
 
 	for(int i = 0; i < vector->used; i++){
 		if(memcmp((char *)vector->data + (vector->unitsize * i) + offset,
-				(char *)cmp, size)){
+				(char *)cmp, size) == 0){
 			return (char *)vector->data + i * vector->unitsize;
 		}
 	}

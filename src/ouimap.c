@@ -124,6 +124,7 @@ Ouimap *ouimapgen(size_t mapsize, char *filepath){
 			return NULL;
 		}
 		memcpy(newnode->oui, oui, sizeof(newnode->oui));
+		memcpy(newnode->org, org, orglen);
 
 		uint32_t index = getindex(mapsize, oui);
 		newnode->next = map->map[index];
@@ -133,12 +134,12 @@ Ouimap *ouimapgen(size_t mapsize, char *filepath){
 	return map;
 }
 
-char *ouilookup(Ouimap *map, uint8_t oui[3]){ // ouifree() frees char * returned by lookup
+char *ouilookup(Ouimap *map, uint8_t *oui){ // ouifree() frees char * returned by lookup
 	uint32_t index = getindex(map->mapsize, oui);
 
 	Ouinode *current = map->map[index];
 	while(current){
-		if(memcmp(current->oui, oui, sizeof(*oui)) == 0){
+		if(memcmp(current->oui, oui, 3) == 0){
 			return current->org;
 		}
 		current = current->next;
