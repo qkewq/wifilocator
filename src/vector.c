@@ -80,6 +80,21 @@ int vecinsert(Vector *vector, void *data, size_t index){
 	return 1;
 }
 
+void *veccmp(Vector *vector, void *cmp, size_t size, size_t offset){
+	if(!vector || !vector->data || !vector->used){
+		return NULL;
+	}
+
+	for(int i = 0; i < vector->used; i++){
+		if(memcmp((char *)vector->data + (vector->unitsize * i) + offset,
+				(char *)cmp, size)){
+			return (char *)vector->data + i * vector->unitsize;
+		}
+	}
+
+	return NULL;
+}
+
 int vecremove(Vector *vector, size_t index){
 	if(!vector || index > vector->capacity){
 		return 0;
