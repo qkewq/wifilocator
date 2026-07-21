@@ -61,7 +61,7 @@ int argtofreq(Arguments *args, char *optarg){
 	return -1;
 }
 
-int getargs(Arguments *args, int argc, char *argv){
+int getargs(Arguments *args, int argc, char **argv){
 	struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"interface", required_argument, 0, 'i'},

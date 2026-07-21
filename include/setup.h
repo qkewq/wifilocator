@@ -20,7 +20,7 @@ typedef struct Arguments{
 	struct iw_freq freq;
 } Arguments;
 
-int getargs(Arguments *args, int argc, char *argv);
+int getargs(Arguments *args, int argc, char **argv);
 // terminal stuff
 // signal handler
 

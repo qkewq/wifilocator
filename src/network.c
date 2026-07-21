@@ -16,13 +16,13 @@
 #include "data.h"
 
 typedef enum Radiotapword{
-	RTPTSFT = 0x80,
-	RTPFLAGS = 0x40,
-	RTPRATE = 0x20,
-	RTPCHANNEL = 0x10,
-	RTPFHSS = 0x08,
-	RTPSIGNAL = 0x04,
-	RTPPRESENT = 0x02,
+	RTPTSFT = 0x01,
+	RTPFLAGS = 0x02,
+	RTPRATE = 0x04,
+	RTPCHANNEL = 0x08,
+	RTPFHSS = 0x10,
+	RTPSIGNAL = 0x20,
+	RTPPRESENT = 0x080,
 } Radiotapword;
 
 typedef enum Frametypes{
@@ -146,12 +146,11 @@ int setmonitor(int fd, char *if_name){
 }
 
 int setchannel(int fd, char *if_name, Channels *channels){
-	pthread_mutex_lock(&channels->lock);
-
 	if(channels->number_nodes == 1){
-		pthread_mutex_unlock(&channels->lock);
 		return 0;
 	}
+
+	pthread_mutex_lock(&channels->lock);
 
 	struct iwreq iwr = {0};
 	strncpy(iwr.ifr_ifrn.ifrn_name, if_name, IFNAMSIZ);
@@ -182,11 +181,12 @@ int radiotap(uint8_t *buffer, Radiotap *rtp){
 	num_words++;
 
 	offset = 4 + (4 * num_words);
-	if(buffer[4] & (RTPCHANNEL | RTPSIGNAL) != (RTPCHANNEL)){
+	if(buffer[4] & (RTPCHANNEL | RTPSIGNAL) != (RTPCHANNEL | RTPSIGNAL)){
 		return 0;
 	}
 
 	if(buffer[4] & RTPTSFT){
+		offset = rtpalign(offset, 8);
 		offset += 8;
 	}
 	if(buffer[4] & RTPFLAGS){
