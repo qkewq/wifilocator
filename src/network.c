@@ -150,7 +150,7 @@ int setchannel(int fd, char *if_name, Channels *channels){
 		return 0;
 	}
 
-	pthread_mutex_lock(&channels->lock);
+	// pthread_mutex_lock(&channels->lock);
 
 	struct iwreq iwr = {0};
 	strncpy(iwr.ifr_ifrn.ifrn_name, if_name, IFNAMSIZ);
@@ -158,11 +158,11 @@ int setchannel(int fd, char *if_name, Channels *channels){
 	memcpy(&iwr.u.freq, &channels->channels[channels->current_index], sizeof(struct iw_freq));
 
 	if(ioctl(fd, SIOCSIWFREQ, &iwr) == -1){
-		pthread_mutex_unlock(&channels->lock);
+		// pthread_mutex_unlock(&channels->lock);
 		return -1;
 	}
 
-	pthread_mutex_unlock(&channels->lock);
+	// pthread_mutex_unlock(&channels->lock);
 
 	return 0;
 }

@@ -80,6 +80,14 @@ int vecinsert(Vector *vector, void *data, size_t index){
 	return 1;
 }
 
+void *vecindex(Vector *vector, size_t index){
+	if(index > vector->used){
+		return NULL;
+	}
+
+	return (char *)vector->data + index * vector->unitsize;
+}
+
 void *veccmp(Vector *vector, void *cmp, size_t size, size_t offset){
 	if(!vector || !vector->data || !vector->used){
 		return NULL;

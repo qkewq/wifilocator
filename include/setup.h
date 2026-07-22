@@ -21,7 +21,7 @@ typedef struct Arguments{
 } Arguments;
 
 int getargs(Arguments *args, int argc, char **argv);
-// terminal stuff
+int prepterminal();
 // signal handler
 
 #endif

@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <net/if.h>
 #include <string.h>
+#include <unistd.h>
+#include <termios.h>
+#include <fcntl.h>
 
 #include "setup.h"
 #include "network.h"
@@ -103,4 +106,17 @@ int getargs(Arguments *args, int argc, char **argv){
 	}
 
 	return ret;
+}
+
+int prepterminal(){
+	struct termios tcattr = {0};
+	tcgetattr(STDIN_FILENO, &tcattr);
+	tcattr.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &tcattr);
+
+	if(fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK) == -1){
+		return -1;
+	}
+
+	return 0;
 }

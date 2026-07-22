@@ -11,6 +11,7 @@ typedef struct Vector{
 Vector *vecinit(size_t count, size_t size);
 int vecappend(Vector *vector, void *data);
 int vecinsert(Vector *vector, void *data, size_t index);
+void *vecindex(Vector *vector, size_t index);
 void *veccmp(Vector *vector, void *cmp, size_t size, size_t offset);
 int vecremove(Vector *vector, size_t index);
 int vecoptimize(Vector *vector);

@@ -10,12 +10,18 @@
 #include "data.h"
 #include "setup.h"
 #include "scanner.h"
+#include "ui.h"
 
 void usage(){
 	printf("");
 }
 
 int main(int argc, char **argv){
+
+	if(argc == 1){
+		usage();
+		return 0;
+	}
 
 	Arguments args = {0};
 	if(getargs(&args, argc, argv) == -1){ // Prints some error messages
@@ -75,9 +81,15 @@ int main(int argc, char **argv){
 	Scannerdata *scannerdata = NULL;
 	if(builddata(fd, args.if_name, channels, ouimap, &scannerdata) == -1){
 		printf("Failed to prepare data structures\n"); // Out of memory
+		close(fd);
 		return 1;
 	}
 
+	if(prepterminal() == -1){
+		printf("Failed to set terminal mode\n");
+		close(fd);
+		return 1;
+	}
 
 	pthread_t scanner;
 	if(pthread_create(&scanner, NULL, scanner_th, scannerdata) != 0){
@@ -85,7 +97,7 @@ int main(int argc, char **argv){
 		return 1;
 	}
 
-	// ui time
+	startui(scannerdata);
 
 	return 0;
 }

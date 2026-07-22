@@ -2,6 +2,8 @@
 #define DATA_H
 
 #include <linux/wireless.h> // For struct iw_freq
+#include <stdint.h> // For int types
+#include <stdatomic.h> // For atomic_size_t
 
 typedef struct Arguments Arguments;
 typedef struct Ouimap Ouimap;
@@ -16,7 +18,8 @@ typedef struct Addrworg{
 typedef struct Channels{
 	pthread_mutex_t lock;
 	size_t number_nodes;
-	size_t current_index;
+	// size_t current_index;
+	atomic_size_t current_index;
 	struct iw_freq channels[IW_MAX_FREQUENCIES];
 } Channels;
 

@@ -1,11 +1,14 @@
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 #include <time.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <pthread.h>
-// <linux/wireless.h> included in header
+
+// included in header
+// #include <stdint.h>
+// #include <stdatomic.h>
+// <linux/wireless.h>
 
 #include "data.h"
 #include "setup.h"
