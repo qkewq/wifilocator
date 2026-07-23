@@ -1,6 +1,10 @@
 #ifndef UIDATA_H
 #define UIDATA_H
 
+#define APROXFRAMERATE  30
+#define NUMPAGES        4
+#define RSSIMAXHISTROY  40
+
 #define ALTBUFF     "\e[?1049h"
 #define NRMBUFF     "\e[?1049l"
 
@@ -33,6 +37,15 @@
 
 typedef struct Devices Devices;
 
+typedef struct Rssiinput{
+	int8_t *peak_dbm;
+	int rssi_index;
+	size_t *last_frame_count;
+	int8_t *history;
+	uint8_t *history_index;
+} Rssiinput;
+
 int drawdevices(Devices *devices, int selected, int start);
+int drawrssi(Devices *devices, Rssiinput *input);
 
 #endif

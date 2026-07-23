@@ -12,25 +12,41 @@
 #include "scanner.h"
 #include "ui.h"
 
-void usage(){
-	printf("");
+void usage(char *v){
+	printf(
+		"%s: Luanches tui for passively scanning nearby networks and devices\n"
+		"\n"
+		"Usage: %s [-mh] [ -i interface] [-c channel] [-b band]\n"
+		"\n"
+		"Options:\n"
+		"-i, --interface=[ interface ]    The name of the interface to be used for scanning\n"
+		"-m, --monitor                    Enables monitor mode on the interface if it is not already\n"
+		"-c, --channel=[ channel | freq]  Values > 1000 are frequencies, values < 1000 are channel numbers\n"
+		"-b, --band=[ 2.4g | 5g | all ]   Choose to scan an entire band or all channels\n"
+		"-h, --help                       Print this help message\n"
+		"\n"
+		"Examples:\n"
+		"%s -i wlan0 -m -c 11\n"
+		"%s --interface wlan0 --band 2.4g --channel 48\n"
+		"%s -i wlan0 -c 2437\n",v,v,v,v,v
+	);
 }
 
 int main(int argc, char **argv){
 
 	if(argc == 1){
-		usage();
+		usage(argv[0]);
 		return 0;
 	}
 
 	Arguments args = {0};
 	if(getargs(&args, argc, argv) == -1){ // Prints some error messages
-		usage();
+		usage(argv[0]);
 		return 1;
 	}
 
 	if(args.help){
-		usage();
+		usage(argv[0]);
 		return 0;
 	}
 

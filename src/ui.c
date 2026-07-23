@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <poll.h>
 
@@ -9,8 +10,8 @@
 #include "vector.h"
 #include "data.h"
 
-#define APROXFRAMERATE  30
-#define NUMPAGES        4
+
+int rssi_index = -1;
 
 typedef enum Userinput{
 	UNKNOWN,
@@ -90,15 +91,17 @@ int devicepage(struct pollfd *pfd, Scannerdata *data, int current){
 	drawheader(current);
 	printf("\n");
 	while(1){
+		printf("\e[3;0H\r");
 		readyfd = poll(pfd, 1, 1000 / APROXFRAMERATE);
 		if(readyfd == -1){
 			return -1;
 		}
 		if(readyfd > 0){
-			Userinput uin = getinput();
-			switch(uin){
+			// Userinput uin = getinput();
+			switch(getinput()){
 				case ENTER:
-					return 2; // Set some global with the index, later :)
+					rssi_index = selected;
+					return 2;
 				case LEFT_Q:
 					return (current - 1) % NUMPAGES;
 				case RIGHT_E:
@@ -119,7 +122,6 @@ int devicepage(struct pollfd *pfd, Scannerdata *data, int current){
 		if(start == -1){
 			return -1;
 		}
-		printf("\e[3;0H\r");
 		fflush(stdout);
 	}
 }
@@ -137,7 +139,49 @@ int probepage(struct pollfd *pfd, Scannerdata *data, int current){
 }
 
 int rssipage(struct pollfd *pfd, Scannerdata *data, int current){
+	int8_t history[RSSIMAXHISTROY];
+	memset(history, -100, RSSIMAXHISTROY);
+	uint8_t history_index = 0;
+	Rssiinput rssi = {0};
+	int8_t peak_dbm = -100;
+	size_t last_frame_count = 0;
+	rssi.peak_dbm = &peak_dbm;
+	rssi.rssi_index = rssi_index;
+	rssi.last_frame_count = &last_frame_count;
+	rssi.history = history;
+	rssi.history_index = &history_index;
+	int readyfd = 0;
 	drawheader(current);
+	printf("\n");
+	while(1){
+		printf("\e[3;0H\r");
+		readyfd = poll(pfd, 1, 1000 / APROXFRAMERATE);
+		if(readyfd == -1){
+			return -1;
+		}
+		if(readyfd > 0){
+			switch(getinput()){
+				case LEFT_Q:
+					return (current - 1) % NUMPAGES;
+				case RIGHT_E:
+					return (current + 1) % NUMPAGES;
+				default:
+					continue;
+			}
+		}
+
+		drawchannels(data->channels);
+		if(rssi_index == -1){
+			printf("No target selected, use the devices page to pick a device\n");
+			continue;
+		}
+
+		if(drawrssi(&data->devices, &rssi) == -1){
+			return -1;
+		}
+
+		fflush(stdout);
+	}
 }
 
 typedef int(*Pagefunc_t)(struct pollfd *pfd, Scannerdata *data, int current);
