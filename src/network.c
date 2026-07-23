@@ -231,7 +231,7 @@ int txpresent(uint8_t type){
 }
 
 int isdevbssid(uint8_t *buffer){
-	switch(buffer[0] | 0x30){
+	switch(buffer[0] & 0x30){
 		case DATA:
 			return buffer[1] & 0x40; // From DS bit
 		case MANAGEMENT:
