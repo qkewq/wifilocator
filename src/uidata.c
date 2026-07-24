@@ -15,29 +15,36 @@
 #define RSS_USEDROWS 5
 
 void printaddr(Addrworg *addr){
+	int printed;
 	if(addr->org){
-		printf("%s_", addr->org);
+		printed = printf("%s_", addr->org);
 	}
 	else{
-		printf("%02x:%02x:%02x:", addr->mac[0], addr->mac[1], addr->mac[2]);
+		printed = printf("%02x:%02x:%02x:", addr->mac[0], addr->mac[1], addr->mac[2]);
 	}
-	printf("%02x:%02x:%02x", addr->mac[3], addr->mac[4], addr->mac[5]);
+	printed += printf("%02x:%02x:%02x", addr->mac[3], addr->mac[4], addr->mac[5]);
+
+	for(printed; printed < 22; printed++){
+		printf(" ");
+	}
 }
 
 void printrole(uint8_t isbssid){
+	printf("   ");
 	switch(isbssid){
 		case 0:
-			printf("Client");
+			printf("Client ");
 			break;
 		case 1:
-			printf("AP");
+			printf("AP     ");
 			break;
 		default:
 			printf("Unknown");
 	}
+	printf("   ");
 }
 
-int drawdevices(Devices *devices, int selected, int start){
+int drawdevices(Devices *devices, int *selected, int *start){
 	struct winsize ws;
 	if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){
 		return -1;
@@ -52,65 +59,53 @@ int drawdevices(Devices *devices, int selected, int start){
 
 	if(numtoprint > used){
 		numtoprint = used;
-		start = 0;
+		*start = 0;
 	}
 
-	if(selected < 0){
-		start = used - numtoprint;
-		selected = used;
+	if(*selected < 0){
+		*selected = used - 1;
 	}
-	else if(selected >= used){
-		start = 0;
-		selected = 0;
+	else if(*selected >= used){
+		*selected = 0;
+	}
+
+	if(*selected < *start){
+		*start = *selected;
+	}
+	else if(*selected >= *start + numtoprint){
+		*start = *selected - numtoprint + 1;
 	}
 
 	time_t now = time(NULL);
 
 	pthread_mutex_lock(&devices->lock);
 	for(int i = 0; i < numtoprint; i++){
-		Device *device = (Device *)vecindex(devices->device, i);
+		Device *device = (Device *)vecindex(devices->device, i + *start);
 		if(!device){
 			return -1;
 		}
 		printf(CLEARLINE);
-		if(i == selected){
+		if(i + *start == *selected){
 			printf(HIGHLIGHT);
 		}
-		printf("%d. ", i + 1);
+		printf("%02d. ", i + *start + 1);
 		printaddr(&device->addr);
 		printrole(device->isbssid);
-		// if(device->addr.org){
-		// 	printf("%s", device->addr.org);
-		// }
-		// else{
-		// 	printf("%02x:%02x:%02x:", device->addr.mac[0], device->addr.mac[1], device->addr.mac[2]);
-		// }
-		// printf("%02x:%02x:%02x\t", device->addr.mac[3], device->addr.mac[4], device->addr.mac[5]);
-		// switch(device->isbssid){
-		// 	case -1:
-		// 		printf("Unknown");
-		// 		break;
-		// 	case 0:
-		// 		printf("Client");
-		// 		break;
-		// 	case 1:
-		// 		printf("AP");
-		// 		break;
-		// }
-		printf("\t %d Frame(s)", device->num_frames);
-		printf("\tChannel %d", device->channel);
-		printf("\tSeen %ds ago", now - device->last_frame);
-		printf("\t%ddbm", device->last_dbm);
-		if(i == selected){
-			printf("Enter to send to RSSI");
+		printf(" %d Frame(s)", device->num_frames);
+		printf("  Channel %d", device->channel);
+		printf("  Seen %ds ago", now - device->last_frame);
+		printf("  %ddbm", device->last_dbm);
+		if(i + *start == *selected){
+			printf(" --Enter to send to RSSI->");
 		}
 		printf(NORMAL "\n");
 	}
 	pthread_mutex_unlock(&devices->lock);
 
-	printf(YELLOW CLEARLINE "%d of %d Displayed\n", numtoprint, devices->device->used);
+	printf(YELLOW CLEARLINE "%d-%d of %d Displayed\n", *start + 1, *start + numtoprint, devices->device->used);
 	printf("Use arrows keys, Q, and E to navigate, Enter to select\n" NORMAL);
-	return start;
+
+	return 0;
 }
 
 int printgraph(struct winsize *ws, int8_t peak, int8_t last){ // optimize this later :)
@@ -157,16 +152,16 @@ int printgraph(struct winsize *ws, int8_t peak, int8_t last){ // optimize this l
 
 int printhistory(struct winsize *ws, int8_t *history, uint8_t index){
 	int graph_height = (ws->ws_row - RSS_USEDROWS - 3) / 2;
-	int graph_col = RSSIMAXHISTROY;
+	int graph_col = RSSIMAXHISTORY;
 	if(ws->ws_col - 1 < graph_col){
 		graph_col = ws->ws_col - 1;
 	}
-	index -= graph_col % RSSIMAXHISTROY;
+	index -= graph_col % RSSIMAXHISTORY;
 	for(int i = 0; i < graph_height; i++){
 		int row_min = -1 * (100 / graph_height) * i;
 		printf("|");
 		for(int j = 0; j < graph_col; j++){
-			if(history[(index + j) % RSSIMAXHISTROY] >= row_min){
+			if(history[(index + j) % RSSIMAXHISTORY] >= row_min){
 				printf("#");
 			}
 			else{
@@ -210,7 +205,7 @@ int drawrssi(Devices *devices, Rssiinput *input){
 	*input->last_frame_count = local.num_frames;
 
 	input->history[*input->history_index] = local.last_dbm;
-	*input->history_index = (*input->history_index + 1) % RSSIMAXHISTROY;
+	*input->history_index = (*input->history_index + 1) % RSSIMAXHISTORY;
 	if(local.last_dbm > *input->peak_dbm){
 		*input->peak_dbm = local.last_dbm;
 	}

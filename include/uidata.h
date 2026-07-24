@@ -3,7 +3,7 @@
 
 #define APROXFRAMERATE  30
 #define NUMPAGES        4
-#define RSSIMAXHISTROY  40
+#define RSSIMAXHISTORY  60
 
 #define ALTBUFF     "\e[?1049h"
 #define NRMBUFF     "\e[?1049l"
@@ -45,7 +45,7 @@ typedef struct Rssiinput{
 	uint8_t *history_index;
 } Rssiinput;
 
-int drawdevices(Devices *devices, int selected, int start);
+int drawdevices(Devices *devices, int *selected, int *start);
 int drawrssi(Devices *devices, Rssiinput *input);
 
 #endif

@@ -118,8 +118,7 @@ int devicepage(struct pollfd *pfd, Scannerdata *data, int current){
 		}
 
 		drawchannels(data->channels);
-		start = drawdevices(&data->devices, selected, start);
-		if(start == -1){
+		if(drawdevices(&data->devices, &selected, &start) == -1){
 			return -1;
 		}
 		fflush(stdout);
@@ -139,20 +138,23 @@ int probepage(struct pollfd *pfd, Scannerdata *data, int current){
 }
 
 int rssipage(struct pollfd *pfd, Scannerdata *data, int current){
-	int8_t history[RSSIMAXHISTROY];
-	memset(history, -100, RSSIMAXHISTROY);
+	int8_t history[RSSIMAXHISTORY];
+	memset(history, -100, RSSIMAXHISTORY);
 	uint8_t history_index = 0;
-	Rssiinput rssi = {0};
 	int8_t peak_dbm = -100;
 	size_t last_frame_count = 0;
-	rssi.peak_dbm = &peak_dbm;
-	rssi.rssi_index = rssi_index;
-	rssi.last_frame_count = &last_frame_count;
-	rssi.history = history;
-	rssi.history_index = &history_index;
-	int readyfd = 0;
+
+	Rssiinput rssi = {.history = history,
+					.history_index = &history_index,
+					.last_frame_count = &last_frame_count,
+					.peak_dbm = &peak_dbm,
+					.rssi_index = rssi_index,
+	};
+
 	drawheader(current);
 	printf("\n");
+
+	int readyfd = 0;
 	while(1){
 		printf("\e[3;0H\r");
 		readyfd = poll(pfd, 1, 1000 / APROXFRAMERATE);
@@ -161,6 +163,7 @@ int rssipage(struct pollfd *pfd, Scannerdata *data, int current){
 		}
 		if(readyfd > 0){
 			switch(getinput()){
+				// Add case ENTER: to lock channel or keep scanning
 				case LEFT_Q:
 					return (current - 1) % NUMPAGES;
 				case RIGHT_E:
