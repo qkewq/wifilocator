@@ -5,6 +5,8 @@
 #include <stdint.h> // For int types
 #include <stdatomic.h> // For atomic_size_t
 
+#define SSIDMAXTERM 33
+
 typedef struct Arguments Arguments;
 typedef struct Ouimap Ouimap;
 
@@ -73,9 +75,14 @@ typedef struct Networks{
 
 /* ---- PROBES ---- */
 
+typedef struct Request{
+	char ssid[SSIDMAXTERM];
+	size_t num_requests;
+} Request;
+
 typedef struct Probe{
 	struct Addrworg addr;
-	struct Vector *ssids; // Vector with type char *
+	struct Vector *requests; // Vector with type Request
 } Probe;
 
 typedef struct Probes{
@@ -97,7 +104,7 @@ typedef struct Scannerdata{
 
 int buildChannels(Arguments *args, int fd, Channels **ret);
 int builddata(int fd, char *if_name, Channels *channels, Ouimap *ouimap, Scannerdata **ret);
-void makeaddrworg(Device *device, uint8_t *addr, Ouimap *ouimap);
+void makeaddrworg(Addrworg *addrworg, uint8_t *addr, Ouimap *ouimap);
 void datafree(Scannerdata *data);
 
 #endif

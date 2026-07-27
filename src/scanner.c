@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -61,16 +62,16 @@ void *scanner_th(void *t_arg){
 
 		addroffset = rtp.header_len + TXOFFSET;
 		// Reading struct without lock because this should be the only
-		// writer thread.  Somehow remember to change this if that changes:)
+		// writer thread.  Somehow remember to change this if that changes :)
 		existing = (Device *)veccmp(data->devices.device,
 									&buffer[addroffset],
 									ADDRLEN,
 									offsetof(Addrworg, mac) + offsetof(Device, addr)
-								);
+		);
 
 		if(!existing){
 			Device new_device = {0};
-			makeaddrworg(&new_device, &buffer[addroffset], data->ouimap);
+			makeaddrworg(&new_device.addr, &buffer[addroffset], data->ouimap);
 			new_device.num_frames++;
 			new_device.last_frame = time(NULL);
 			new_device.isbssid = isdevbssid(&buffer[rtp.header_len]);
@@ -93,6 +94,52 @@ void *scanner_th(void *t_arg){
 			pthread_mutex_unlock(&data->devices.lock);
 		}
 
+		if(isprobe(buffer[rtp.header_len])){ // Will abstract this later I promise :)
+			int ssid_offset = 0;
+			uint8_t ssid_len = 0;
+			getssid(&buffer[rtp.header_len], &ssid_offset, &ssid_len);
+			// Another no lock read :)
+			Probe *existing_probe = (Probe *)veccmp(data->probes.probe,
+													&buffer[addroffset],
+													ADDRLEN,
+													offsetof(Addrworg, mac) + offsetof(Probe, addr)
+			);
 
+			if(!existing_probe){
+				Probe new_probe = {0};
+				new_probe.requests = vecinit(2, sizeof(Request));
+				if(!new_probe.requests){
+					// out of memory
+				}
+				makeaddrworg(&new_probe.addr, &buffer[addroffset], data->ouimap);
+				pthread_mutex_lock(&data->probes.lock);
+				if(!vecappend(data->probes.probe,&new_probe)){
+					// out of memory
+				}
+				existing_probe = (Probe *)data->probes.probe->data + data->probes.probe->used - 1;
+				pthread_mutex_unlock(&data->probes.lock);
+			}
+
+			// Probe new_probe = {0};
+			// :)
+			Request *req = (Request *)veccmp(existing_probe->requests,
+											&buffer[ssid_offset + rtp.header_len],
+											ssid_len,
+											offsetof(Request, ssid)
+			);
+			pthread_mutex_lock(&data->probes.lock);
+			if(!req){
+				Request new_request = {0};
+				memcpy(&new_request.ssid, &buffer[ssid_offset + rtp.header_len], ssid_len);
+				new_request.num_requests++;
+				if(!vecappend(existing_probe->requests, &new_request)){
+					// out of memory
+				}
+			}
+			else{
+				req->num_requests++;
+			}
+			pthread_mutex_unlock(&data->probes.lock);
+		}
 	}
 }

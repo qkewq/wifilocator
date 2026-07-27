@@ -74,10 +74,10 @@ int drawchannels(Channels *channels){
 	int current = channels->current_index;
 	for(int i = 0; i < channels->number_nodes; i++){
 		if(i == current){
-			printf(GREEN" %d "RED, channels->channels[i].i);
+			printf(GREEN" %d"RED, channels->channels[i].i);
 			continue;
 		}
-		printf(" %d ", channels->channels[i].i);
+		printf(" %d", channels->channels[i].i);
 	}
 
 	printf(NORMAL"\n");
@@ -118,8 +118,7 @@ int devicepage(struct pollfd *pfd, Scannerdata *data, int current){
 		}
 
 		drawchannels(data->channels);
-		start = drawdevices(&data->devices, selected, start);
-		if(start == -1){
+		if(drawdevices(&data->devices, &selected, &start) == -1){
 			return -1;
 		}
 		fflush(stdout);
@@ -127,29 +126,6 @@ int devicepage(struct pollfd *pfd, Scannerdata *data, int current){
 }
 
 int networkpage(struct pollfd *pfd, Scannerdata *data, int current){
-	drawheader(current);
-	printf("\n");
-	drawchannels(data->channels);
-}
-
-int probepage(struct pollfd *pfd, Scannerdata *data, int current){
-	drawheader(current);
-	printf("\n");
-	drawchannels(data->channels);
-}
-
-int rssipage(struct pollfd *pfd, Scannerdata *data, int current){
-	int8_t history[RSSIMAXHISTROY];
-	memset(history, -100, RSSIMAXHISTROY);
-	uint8_t history_index = 0;
-	Rssiinput rssi = {0};
-	int8_t peak_dbm = -100;
-	size_t last_frame_count = 0;
-	rssi.peak_dbm = &peak_dbm;
-	rssi.rssi_index = rssi_index;
-	rssi.last_frame_count = &last_frame_count;
-	rssi.history = history;
-	rssi.history_index = &history_index;
 	int readyfd = 0;
 	drawheader(current);
 	printf("\n");
@@ -161,6 +137,96 @@ int rssipage(struct pollfd *pfd, Scannerdata *data, int current){
 		}
 		if(readyfd > 0){
 			switch(getinput()){
+				case LEFT_Q:
+					return (current + NUMPAGES - 1) % NUMPAGES; // Negative mod safe
+				case RIGHT_E:
+					return (current + 1) % NUMPAGES;
+			}
+		}
+
+	drawchannels(data->channels);
+	printf("Page Under Construction");
+
+	fflush(stdout);
+	}
+}
+
+int probepage(struct pollfd *pfd, Scannerdata *data, int current){
+	int start = 0;
+	int substart = 0;
+	int readyfd = 0;
+
+	Probesinput probe = {.start = &start,
+						.substart = &substart,
+						.showwild = 0,
+	};
+
+	drawheader(current);
+	printf("\n");
+	while(1){
+		printf("\e[3;0H\r");
+		readyfd = poll(pfd, 1, 1000 / APROXFRAMERATE);
+		if(readyfd == -1){
+			return -1;
+		}
+		if(readyfd > 0){
+			switch(getinput()){
+				case ENTER:
+					if(probe.showwild){
+						probe.showwild = 0;
+					}
+					else{
+						probe.showwild = 1;
+					}
+					break;
+				case LEFT_Q:
+					return (current - 1) % NUMPAGES;
+				case RIGHT_E:
+					return (current + 1) % NUMPAGES;
+				case UP_ARROW:
+					//temp
+					break;
+				case DOWN_ARROW:
+					//temp
+					break;
+			}
+		}
+
+		drawchannels(data->channels);
+		if(drawprobes(&data->probes, &probe) == -1){
+			return -1;
+		}
+		fflush(stdout);
+	}
+}
+
+int rssipage(struct pollfd *pfd, Scannerdata *data, int current){
+	int8_t history[RSSIMAXHISTORY];
+	memset(history, -100, RSSIMAXHISTORY);
+	uint8_t history_index = 0;
+	int8_t peak_dbm = -100;
+	size_t last_frame_count = 0;
+
+	Rssiinput rssi = {.history = history,
+					.history_index = &history_index,
+					.last_frame_count = &last_frame_count,
+					.peak_dbm = &peak_dbm,
+					.rssi_index = rssi_index,
+	};
+
+	drawheader(current);
+	printf("\n");
+
+	int readyfd = 0;
+	while(1){
+		printf("\e[3;0H\r");
+		readyfd = poll(pfd, 1, 1000 / APROXFRAMERATE);
+		if(readyfd == -1){
+			return -1;
+		}
+		if(readyfd > 0){
+			switch(getinput()){
+				// Add case ENTER: to lock channel or keep scanning
 				case LEFT_Q:
 					return (current - 1) % NUMPAGES;
 				case RIGHT_E:
