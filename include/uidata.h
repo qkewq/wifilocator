@@ -11,6 +11,7 @@
 #define HOME        "\e[H"
 #define CLEAR       "\e[2J"
 #define CLEARLINE   "\e[2K"
+#define CLEARTOEND  "\e[0J"
 #define HIDE        "\e[?25l"
 #define SHOW        "\e[?25h"
 
@@ -36,6 +37,7 @@
 #define HIGHLIGHT   "\e[0;30m \e[47m"
 
 typedef struct Devices Devices;
+typedef struct Probes Probes;
 
 typedef struct Rssiinput{
 	int8_t *peak_dbm;
@@ -45,7 +47,14 @@ typedef struct Rssiinput{
 	uint8_t *history_index;
 } Rssiinput;
 
+typedef struct Probesinput{
+	int *start;
+	int *substart;
+	int showwild;
+} Probesinput;
+
 int drawdevices(Devices *devices, int *selected, int *start);
 int drawrssi(Devices *devices, Rssiinput *input);
+int drawprobes(Probes *probes, Probesinput *input);
 
 #endif

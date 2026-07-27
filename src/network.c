@@ -212,12 +212,12 @@ int radiotap(uint8_t *buffer, Radiotap *rtp){
 }
 
 int txpresent(uint8_t type){
-	switch(type & 0x30){
+	switch(type & 0x0C >> 2){
 		case MANAGEMENT:
 		case DATA:
 			return 1;
 		case CONTROL:
-			switch(type & 0x0F){
+			switch(type & 0xF0 >> 4){
 				case CON_CTS:
 				case CON_ACK:
 				case CON_WRAP:
@@ -231,9 +231,9 @@ int txpresent(uint8_t type){
 }
 
 int isdevbssid(uint8_t *buffer){
-	switch(buffer[0] & 0x30){
+	switch(buffer[0] & 0x0C >> 2){
 		case DATA:
-			return buffer[1] & 0x40; // From DS bit
+			return buffer[1] & 0x02 >> 1; // From DS bit
 		case MANAGEMENT:
 			if(memcmp(&buffer[10], &buffer[16], 6) == 0){
 				return 1;
@@ -246,4 +246,28 @@ int isdevbssid(uint8_t *buffer){
 	}
 
 	return -1;
+}
+
+int isprobe(uint8_t type){
+	if(((type & 0x0C) >> 2) == MANAGEMENT && ((type & 0xF0) >> 4 == 0x04)){
+		return 1;
+	}
+
+	return 0;
+}
+
+int getssid(uint8_t *buffer, int *ssid_offset, uint8_t *ssid_len){
+	int offset = 24;
+	if(buffer[1] & 0x80){
+		offset += 4;
+	}
+
+	if(buffer[offset] != 0x00){
+		*ssid_offset = 0;
+		return 0;
+	}
+
+	*ssid_offset = offset + 2;
+	*ssid_len = buffer[offset + 1];
+	return 1;
 }

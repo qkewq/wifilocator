@@ -13,6 +13,7 @@
 
 #define DEV_USEDROWS 7
 #define RSS_USEDROWS 5
+#define PRO_USERROWS 6
 
 void printaddr(Addrworg *addr){
 	int printed;
@@ -24,6 +25,7 @@ void printaddr(Addrworg *addr){
 	}
 	printed += printf("%02x:%02x:%02x", addr->mac[3], addr->mac[4], addr->mac[5]);
 
+	printf(NORMAL);
 	for(printed; printed < 22; printed++){
 		printf(" ");
 	}
@@ -33,15 +35,15 @@ void printrole(uint8_t isbssid){
 	printf("   ");
 	switch(isbssid){
 		case 0:
-			printf("Client ");
+			printf(BLUE "Client ");
 			break;
 		case 1:
-			printf("AP     ");
+			printf(PURPLE "AP     ");
 			break;
 		default:
-			printf("Unknown");
+			printf(RED "Unknown");
 	}
-	printf("   ");
+	printf("   " NORMAL);
 }
 
 int drawdevices(Devices *devices, int *selected, int *start){
@@ -88,15 +90,15 @@ int drawdevices(Devices *devices, int *selected, int *start){
 		if(i + *start == *selected){
 			printf(HIGHLIGHT);
 		}
-		printf("%02d. ", i + *start + 1);
+		printf("%2d. ", i + *start + 1);
 		printaddr(&device->addr);
 		printrole(device->isbssid);
-		printf(" %d Frame(s)", device->num_frames);
-		printf("  Channel %d", device->channel);
-		printf("  Seen %ds ago", now - device->last_frame);
-		printf("  %ddbm", device->last_dbm);
+		printf(YELLOW " %3d " NORMAL "Frame(s)", device->num_frames);
+		printf("  Channel " YELLOW "%3d" NORMAL, device->channel);
+		printf("  Seen " YELLOW "%2ds " NORMAL "ago", now - device->last_frame);
+		printf(YELLOW "  %2d " NORMAL "dbm", device->last_dbm);
 		if(i + *start == *selected){
-			printf(" --Enter to send to RSSI->");
+			printf(YELLOW " --Enter to send to RSSI->" NORMAL);
 		}
 		printf(NORMAL "\n");
 	}
@@ -144,7 +146,7 @@ int printgraph(struct winsize *ws, int8_t peak, int8_t last){ // optimize this l
 		for(j; j < peak_pos; j++){
 			printf(" ");
 		}
-		printf(PURPLE CYANBG "|" NORMAL "\n");
+		printf(CYAN BLUEBG "|" NORMAL "\n");
 	}
 	printf("\n");
 	return 0;
@@ -192,11 +194,12 @@ int drawrssi(Devices *devices, Rssiinput *input){
 
 	pthread_mutex_unlock(&devices->lock);
 
+	printf(CLEARLINE HIGHLIGHT);
 	printaddr(&local.addr);
 	printrole(local.isbssid);
-	printf("\tChannel: %d\t", local.channel);
-	printf("%d Frame(s)", local.num_frames);
-	printf("\tSeen %ds ago\n\n", time(NULL) - local.last_frame);
+	printf("\tChannel: " YELLOW "%d\t" NORMAL, local.channel);
+	printf(YELLOW "%d" NORMAL "Frame(s)", local.num_frames);
+	printf("\tSeen " YELLOW "%ds" NORMAL "ago\n\n", time(NULL) - local.last_frame);
 
 	if(local.num_frames <= *input->last_frame_count){
 		*input->last_frame_count = local.num_frames;
@@ -210,10 +213,82 @@ int drawrssi(Devices *devices, Rssiinput *input){
 		*input->peak_dbm = local.last_dbm;
 	}
 
-	printf("Last: %ddbm\tPeak: %ddbm\n\n", local.last_dbm, *input->peak_dbm);
+	printf("Last: " YELLOW "%d" NORMAL "dbm\tPeak: " BLUE "%d" NORMAL "dbm\n\n",
+		 local.last_dbm, *input->peak_dbm
+	);
 
 	printgraph(&ws, *input->peak_dbm, local.last_dbm);
 	printhistory(&ws, input->history, *input->history_index);
+
+	return 0;
+}
+
+int printprobes(Probe *probe, int maxrows, int showwild){
+	int i = 0;
+	for(i; i < probe->requests->used && i < maxrows; i++){
+		Request *req = vecindex(probe->requests, i);
+		if(!req){
+			return i;
+		}
+
+		if(!req->ssid[0] && !showwild){
+			continue;
+		}
+		printf("    -->" YELLOW "%2d" NORMAL "requests made for ssid: ", req->num_requests);
+
+		if(!req->ssid[0]){
+			printf(RED "Wildcard Request" NORMAL);
+		}
+		else{
+			printf(GREEN "%s" NORMAL, req->ssid);
+		}
+		printf("\n");
+	}
+
+	return i;
+}
+
+int drawprobes(Probes *probes, Probesinput *input){
+	struct winsize ws;
+	if(ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1){
+		return -1;
+	}
+
+	if(input->showwild){
+		printf(HIGHLIGHT "[X] Show wildcard requests\n" NORMAL);
+	}
+	else{
+		printf(HIGHLIGHT "[ ] Show wildcard requests\n" NORMAL);
+	}
+
+	int printed = 0;
+	int numtoprint = ws.ws_row - PRO_USERROWS;
+	size_t used = probes->probe->used;
+	if(!used){
+		printf("Nothing found yet\n");
+		return 0;
+	}
+
+	pthread_mutex_lock(&probes->lock);
+	printf(CLEARTOEND);
+	for(int i = 0; i < used; i ++){
+		if(printed == numtoprint - 1){
+			break;
+		}
+		Probe *probe = vecindex(probes->probe, i);
+		if(!probe){
+			return -1;
+		}
+		printf("%2d. ", i + 1);
+		printaddr(&probe->addr);
+		printf("\n");
+		printed++;
+		printed = printprobes(probe, numtoprint - printed, input->showwild);
+	}
+
+	pthread_mutex_unlock(&probes->lock);
+
+	printf(YELLOW "TEST\n" NORMAL);
 
 	return 0;
 }

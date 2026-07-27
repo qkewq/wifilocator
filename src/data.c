@@ -14,6 +14,7 @@
 #include "setup.h"
 #include "ouimap.h"
 #include "vector.h"
+#include "network.h"
 
 void channel_free(Channels *channel_head){
 	pthread_mutex_destroy(&channel_head->lock);
@@ -63,6 +64,7 @@ int buildChannels(Arguments *args, int fd, Channels **ret){
 			free(channel_head);
 			return -1;
 		}
+		iwr.u.freq.i = freqtochannel(iwr.u.freq.m);
 		addChannel(channel_head, &iwr.u.freq);
 		*ret = channel_head;
 
@@ -105,15 +107,20 @@ int buildChannels(Arguments *args, int fd, Channels **ret){
 		return -1;
 	}
 
+	memcpy(&iwr.u.freq, &channel_head->channels[0], sizeof(struct iw_freq));
+	if(ioctl(fd, SIOCSIWFREQ, &iwr) == -1){
+		free(channel_head);
+		return -1;
+	}
 	channel_head->current_index = 0;
 
 	*ret = channel_head;
 	return 0;
 }
 
-void makeaddrworg(Device *device, uint8_t *addr, Ouimap *ouimap){
-	device->addr.org = ouilookup(ouimap, addr);
-	memcpy(device->addr.mac, addr, 6);
+void makeaddrworg(Addrworg *addrworg, uint8_t *addr, Ouimap *ouimap){
+	addrworg->org = ouilookup(ouimap, addr);
+	memcpy(addrworg->mac, addr, 6);
 }
 
 int builddata(int fd, char *if_name, Channels *channels, Ouimap *ouimap, Scannerdata **ret){
@@ -127,9 +134,9 @@ int builddata(int fd, char *if_name, Channels *channels, Ouimap *ouimap, Scanner
 	scannerdata->channels = channels;
 	scannerdata->ouimap = ouimap;
 
-	scannerdata->devices.device = vecinit(16, sizeof(Device));
+	scannerdata->devices.device = vecinit(64, sizeof(Device));
 	scannerdata->networks.network = vecinit(8, sizeof(Network));
-	scannerdata->probes.probe = vecinit(8, sizeof(Probe));
+	scannerdata->probes.probe = vecinit(16, sizeof(Probe));
 
 	if(!scannerdata->devices.device ||
 	!scannerdata->networks.network ||
@@ -158,7 +165,7 @@ void networkfree(void *arg){
 
 void probefree(void *arg){
 	Probe *probe = (Probe *)arg;
-	vecfree(probe->ssids);
+	vecfree(probe->requests);
 }
 
 void datafree(Scannerdata *data){
