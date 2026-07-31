@@ -14,6 +14,11 @@
 
 #include "network.h"
 #include "data.h"
+#include "vector.h"
+
+#define RSN_IE            48
+#define WPA_IE            221
+#define CHANNEL_REPORT_IE 51
 
 typedef enum Radiotapword{
 	RTPTSFT = 0x01,
@@ -256,10 +261,21 @@ int isprobe(uint8_t type){
 	return 0;
 }
 
+int isbeacon(uint8_t type){
+	if(((type & 0x0C) >> 2) == MANAGEMENT && ((type & 0xF0) >> 4 == 0x08)){
+		return 1;
+	}
+
+	return 0;
+}
+
 int getssid(uint8_t *buffer, int *ssid_offset, uint8_t *ssid_len){
 	int offset = 24;
 	if(buffer[1] & 0x80){
 		offset += 4;
+	}
+	if((buffer[0] & 0x0F) >> 4 == 0x08){
+		offset += 12;
 	}
 
 	if(buffer[offset] != 0x00){
@@ -269,5 +285,150 @@ int getssid(uint8_t *buffer, int *ssid_offset, uint8_t *ssid_len){
 
 	*ssid_offset = offset + 2;
 	*ssid_len = buffer[offset + 1];
+	return 1;
+}
+
+Protocols parse_rsn_ie(uint8_t *buffer){
+	Protocols ret = UNKNOWN;
+	int offset = 8;
+	offset += ((buffer[offset] << 8) + buffer[offset + 1]) * 4;
+	offset += 2;
+	uint16_t akm_count = (buffer[offset] << 8) + buffer[offset + 1];
+	offset += 2;
+	uint8_t oui[3] = {0x00, 0x0F, 0xAC};
+	for(int i = 0; i < akm_count; i++){
+		if(memcmp(&buffer[offset + (i * 4)], &oui, 3) == 0){
+			switch(buffer[offset + (i * 4) - 1]){
+				case 0x01:
+					if(ret == WPA3E){
+						return WPA3E_T;
+					}
+					ret = WPA2E;
+					break;
+				case 0x02:
+					if(ret == WPA3P){
+						return WPA3P_T;
+					}
+					ret = WPA2P;
+					break;
+				case 0x05:
+					if(ret == WPA2E){
+						return WPA3E_T;
+					}
+					ret = WPA3E;
+					break;
+				case 0x08:
+					if(ret == WPA2P){
+						return WPA3P_T;
+					}
+					ret = WPA3P;
+					break;
+			}
+		}
+	}
+
+	return ret;
+}
+
+Protocols parse_wpa_ie(uint8_t *buffer){
+	int offset = 12;
+	offset += buffer[offset] * 4;
+	offset += 1;
+	uint8_t akm_count = buffer[offset];
+	offset += 1;
+	uint8_t oui[3] = {0x00, 0x50, 0xF2};
+	for(int i = 0; i < akm_count; i++){
+		if(memcmp(&buffer[offset + (i * 4)], &oui, 3) == 0){
+			switch(buffer[offset + (i * 4) - 1]){
+				case 0x01:
+					return WPAE;
+				case 0x02:
+					return WPAP;
+			}
+		}
+	}
+
+	return UNKNOWN;
+}
+
+Protocols getprotocol(uint8_t *buffer, size_t len){
+	int offset = 34;
+	int privacy_bit = 0;
+	int rsn_offset = 0;
+	int wpa_offset = 0;
+	uint8_t wpa_type[4] = {0x00, 0x50, 0xF2, 0x01};
+	if(buffer[1] & 0x80){
+		offset += 4;
+	}
+
+	privacy_bit = buffer[offset + 1] & 0x10;
+	offset += 2;
+	if(!privacy_bit){
+		return OPEN;
+	}
+
+	while(offset < len){
+		if(buffer[offset] != RSN_IE || buffer[offset] != WPA_IE){
+			offset += buffer[offset + 1] + 2;
+			continue;
+		}
+
+		if(buffer[offset] == RSN_IE){
+			rsn_offset = offset;
+		}
+
+		if(buffer[offset] == WPA_IE){
+			if(memcmp(&buffer[offset + 2], &wpa_type, 4) == 0){
+				wpa_offset = offset;
+			}
+		}
+
+		offset += buffer[offset + 1] + 2;
+	}
+
+	if(privacy_bit && !rsn_offset && !wpa_offset){
+		return WEP;
+	}
+
+	Protocols ret = UNKNOWN;
+	if(rsn_offset){
+		ret = parse_rsn_ie(&buffer[rsn_offset]);
+	}
+	if(wpa_offset){
+		ret = parse_wpa_ie(&buffer[wpa_offset]);
+	}
+
+	return ret;
+}
+
+int getchannels(uint8_t *buffer, Vector *channels, size_t len){
+	int offset = 34;
+	if(buffer[1] & 0x80){
+		offset += 4;
+	}
+
+	uint8_t present[255] = {0};
+	while(offset < len){
+		if(buffer[offset] != CHANNEL_REPORT_IE){
+			offset += buffer[offset + 1] + 2;
+			continue;
+		}
+		for(int i = 0; i < buffer[offset + 1] - 1; i++){
+			uint8_t channel = buffer[offset + 3 + i];
+			if(present[channel]){
+				continue;
+			}
+			present[channel] = 1;
+			if(!vecappend(channels, &channel)){
+				return 0;
+			}
+		}
+		offset += buffer[offset + 1] + 2;
+	}
+
+	if(!vecoptimize(channels)){
+		return 0;
+	}
+
 	return 1;
 }

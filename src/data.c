@@ -157,8 +157,6 @@ int builddata(int fd, char *if_name, Channels *channels, Ouimap *ouimap, Scanner
 void networkfree(void *arg){
 	Network *network = (Network *)arg;
 	free(network->ssid);
-	vecfree(network->pairwise_ciphers);
-	vecfree(network->akm_suites);
 	vecfree(network->bssids);
 	vecfree(network->channels);
 }
