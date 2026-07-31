@@ -44,26 +44,23 @@ typedef struct Devices{
 /* ---- NETWORKS ---- */
 
 typedef enum Protocols{
+	UNKNOWN = 0x00,
+	OPEN,
 	WEP,
-	WPA,
-	WPA2,
-	WPA3,
+	WPAP,
+	WPAE,
+	WPA2P,
+	WPA2E,
+	WPA3P,
+	WPA3E,
+	WPA3P_T,
+	WPA3E_T,
 } Protocols;
 
-typedef enum Ciphers{
-	TEMPCIPHER,
-} Ciphers;
-
-typedef enum Akmsuites{
-	TEMPAKM,
-} Akmsuites;
-
 typedef struct Network{
-	char *ssid;
+	char ssid[SSIDMAXTERM];
 	enum Protocols protocol;
-	enum Ciphers group_cipher;
-	struct Vector *pairwise_ciphers;
-	struct Vector *akm_suites;
+	time_t last_seen;
 	struct Vector *bssids; // Vector with type Addrworg
 	struct Vector *channels; // Vector with type uint8_t
 } Network;

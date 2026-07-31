@@ -98,6 +98,10 @@ void *scanner_th(void *t_arg){
 			int ssid_offset = 0;
 			uint8_t ssid_len = 0;
 			getssid(&buffer[rtp.header_len], &ssid_offset, &ssid_len);
+			if(!ssid_offset){
+				continue;
+			}
+
 			// Another no lock read :)
 			Probe *existing_probe = (Probe *)veccmp(data->probes.probe,
 													&buffer[addroffset],
@@ -140,6 +144,59 @@ void *scanner_th(void *t_arg){
 				req->num_requests++;
 			}
 			pthread_mutex_unlock(&data->probes.lock);
+		}
+
+		if(isbeacon(buffer[rtp.header_len])){
+			int ssid_offset = 0;
+			uint8_t ssid_len = 0;
+			getssid(&buffer[rtp.header_len], &ssid_offset, &ssid_len);
+			if(!ssid_offset){
+				continue;
+			}
+
+			Network *existing_network = veccmp(data->networks.network,
+												&buffer[ssid_offset + rtp.header_len],
+												ssid_len,
+												offsetof(Network, ssid)
+			);
+
+			if(!existing_network){
+				Network new_network = {0};
+				new_network.bssids = vecinit(2, sizeof(Addrworg));
+				new_network.channels = vecinit(4, sizeof(uint8_t));
+				if(!new_network.bssids || !new_network.channels){
+					// out of memory
+				}
+				memcpy(&new_network, &buffer[ssid_offset + rtp.header_len], ssid_len);
+				new_network.protocol = getprotocol(&buffer[rtp.header_len], frame_size - rtp.header_len);
+				if(!getchannels(&buffer[rtp.header_len], new_network.channels, frame_size - rtp.header_len)){
+					// out of memory
+				}
+
+				pthread_mutex_lock(&data->networks.lock);
+				if(!vecappend(data->networks.network, &new_network)){
+					// out of memory
+				}
+				pthread_mutex_unlock(&data->networks.lock);
+				existing_network = (Network *)data->networks.network->data + data->networks.network->used - 1;
+			}
+
+			if(!veccmp(existing_network->bssids,
+					&buffer[addroffset],
+					ADDRLEN,
+					offsetof(Addrworg,mac))){
+				Addrworg bssid = {0};
+				makeaddrworg(&bssid, &buffer[addroffset], data->ouimap);
+				pthread_mutex_lock(&data->networks.lock);
+				if(!vecappend(existing_network->bssids, &bssid)){
+					// out of memory
+				}
+				pthread_mutex_unlock(&data->networks.lock);
+			}
+
+			pthread_mutex_lock(&data->networks.lock);
+			existing_network->last_seen = time(NULL);
+			pthread_mutex_unlock(&data->networks.lock);
 		}
 	}
 }

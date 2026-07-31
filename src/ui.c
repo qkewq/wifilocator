@@ -14,7 +14,7 @@
 int rssi_index = -1;
 
 typedef enum Userinput{
-	UNKNOWN,
+	INPUT_UNKNOWN,
 	UP_ARROW,
 	DOWN_ARROW,
 	LEFT_Q,
@@ -26,7 +26,7 @@ Userinput getinput(){
 	char buffer[16] = {0};
 	int ret = read(STDIN_FILENO, buffer, sizeof(buffer) / sizeof(char));
 	if(!ret){
-		return UNKNOWN;
+		return INPUT_UNKNOWN;
 	}
 
 	switch(buffer[0]){
@@ -46,7 +46,7 @@ Userinput getinput(){
 				return DOWN_ARROW;
 			}
 		default:
-			return UNKNOWN;
+			return INPUT_UNKNOWN;
 	}
 }
 
