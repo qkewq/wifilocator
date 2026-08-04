@@ -1,0 +1,33 @@
+#! /bin/bash
+
+_wifilocator() {
+	local current
+	local previous
+	local long_opts
+
+	COMPREPLY=()
+
+	current="${COMP_WORDS[COMP_CWORD]}"
+	previous="${COMP_WORDS[COMP_CWORD-1]}"
+	long_opts="--help --interface --band --channel --monitor"
+
+	if [[ ${current} == -* || ${COMP_CWORD} -eq 1 ]] ; then
+		COMPREPLY=( $(compgen -W "${long_opts}" -- ${current}) )
+		return 0
+	fi
+
+	case "${previous}" in
+		-i|--interface)
+			_comp_compgen_available_interfaces
+			;;
+		-b|--band)
+			COMPREPLY=( $(compgen -W "2.4g 5g all" ${current}) )
+			;;
+		-c|--channel)
+			#COMPREPLY=( $(compgen -W "\Less_than_1000_are_channel_numbers \Greater_than_1000_are_frequencies" "") )
+			COMPREPLY=( $(compgen -W "\<1000=channel_number \>1000=frequency" "") )
+			;;
+	esac
+}
+
+complete -F _wifilocator wifilocator
