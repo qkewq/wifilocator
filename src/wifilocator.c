@@ -14,7 +14,7 @@
 
 void usage(char *v){
 	printf(
-		"%s: Luanches tui for passively scanning nearby networks and devices\n"
+		"%s: Launches tui for passively scanning nearby networks and devices\n"
 		"\n"
 		"Usage: %s [-mh] [ -i interface] [-c channel] [-b band]\n"
 		"\n"
